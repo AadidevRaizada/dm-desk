@@ -101,14 +101,25 @@ export interface InstagramMedia {
   comments_count?: number;
 }
 
+/**
+ * Per-media insight values. Every requested metric is present as a key; a
+ * metric Meta didn't return a value for (not available for this media, still
+ * processing, or hidden) is `null`, never 0, so callers can tell "no data"
+ * from a real zero.
+ */
 export interface InstagramMediaInsights {
-  views?: number;
-  reach?: number;
-  likes?: number;
-  comments?: number;
-  saved?: number;
-  shares?: number;
-  total_interactions?: number;
+  views?: number | null;
+  reach?: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  saved?: number | null;
+  shares?: number | null;
+  total_interactions?: number | null;
+  /** Reels only, milliseconds. */
+  ig_reels_avg_watch_time?: number | null;
+  /** Reels only; Meta documents a percentage (0-100). */
+  reels_skip_rate?: number | null;
+  [metric: string]: number | null | undefined;
 }
 
 interface TokenResponse {
@@ -685,19 +696,36 @@ export async function getMediaInsights(
 
   const response = await fetch(url.toString());
   const data = await handleResponse<{
-    data: Array<{
+    data?: Array<{
       name: string;
       values?: Array<{ value: number }>;
       total_value?: { value: number };
     }>;
   }>(response);
 
+  return parseMediaInsights(metrics, data.data ?? []);
+}
+
+/**
+ * Meta returns some metrics as values[0].value and newer ones (e.g.
+ * reels_skip_rate) as total_value.value; accept either. Metrics that come
+ * back missing or empty are null (exported for tests).
+ */
+export function parseMediaInsights(
+  requested: string[],
+  entries: Array<{
+    name: string;
+    values?: Array<{ value: number }>;
+    total_value?: { value: number };
+  }> = []
+): InstagramMediaInsights {
   const result: InstagramMediaInsights = {};
-  for (const entry of data.data) {
-    // Meta returns some metrics as values[0].value and newer ones (e.g.
-    // reels_skip_rate) as total_value.value — accept either.
-    result[entry.name as keyof InstagramMediaInsights] =
-      entry.values?.[0]?.value ?? entry.total_value?.value ?? 0;
+  for (const name of requested) result[name] = null;
+  for (const entry of entries) {
+    const raw = entry.values?.[0]?.value ?? entry.total_value?.value;
+    const value = typeof raw === "number" ? raw : Number(raw);
+    result[entry.name] =
+      raw === undefined || raw === null || !Number.isFinite(value) ? null : value;
   }
   return result;
 }

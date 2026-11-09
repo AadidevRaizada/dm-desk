@@ -4,6 +4,7 @@
 //   - attach-next-reel  every :00 and :30
 //   - refresh-tokens, snapshot-followers, snapshot-cleanup  daily at 05:xx UTC
 //   - publish-scheduled  every minute (backup for the worker's publisher loop)
+//   - evaluate-experiments  every 15 minutes (backup for the worker's strategy loop)
 import { existsSync } from "node:fs";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -33,6 +34,7 @@ async function call(route, method = "GET") {
 let lastSlot = "";
 let lastPublishMinute = "";
 let lastDaily = "";
+let lastEvaluate = "";
 console.log(`[cron] scheduler started, target ${BASE}`);
 
 async function tick() {
@@ -46,6 +48,10 @@ async function tick() {
   if (lastPublishMinute !== hhmm) {
     lastPublishMinute = hhmm;
     void call("publish-scheduled", "POST");
+  }
+  if (minute % 15 === 7 && lastEvaluate !== hhmm) {
+    lastEvaluate = hhmm;
+    void call("evaluate-experiments", "POST");
   }
   if ((minute === 0 || minute === 30) && lastSlot !== hhmm) {
     lastSlot = hhmm;

@@ -11,8 +11,9 @@ import {
 
 /**
  * Schedule a reel: upload a video, pick a time, the worker publishes it to
- * Instagram (lib/scheduling/publisher.ts). The list below the form shows
- * what's coming up, what went out and what failed.
+ * Instagram (lib/scheduling/publisher.ts). On top: the posting strategy
+ * engine (lib/strategy/*): this week's plan, suggested moves, hook tests and
+ * remixes. Below: tests, the queue and the "new" flows.
  */
 export default function SchedulePage() {
   return (
@@ -20,7 +21,7 @@ export default function SchedulePage() {
       <HdPageHead
         area="hooks"
         title="Post a reel"
-        line="Upload it once. It goes out at the time you pick."
+        line="Your week, what to post next, and hook tests that pick their own winner."
       />
       <Suspense fallback={<ScheduleSkeleton />}>
         <ScheduleRegion />

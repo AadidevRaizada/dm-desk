@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
       trialStrategy: input.trialStrategy,
       scheduledAt,
       status: "SCHEDULED",
+      durationSec: duration > 0 ? duration : null,
     },
     select: { id: true, scheduledAt: true },
   });

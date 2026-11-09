@@ -57,10 +57,15 @@ export default function ScheduleForm({
   accounts,
   topPostTimestamps,
   onScheduled,
+  initialWhen,
+  initialCaption,
 }: {
   accounts: { id: string; username: string }[];
   topPostTimestamps: string[];
   onScheduled: () => Promise<void> | void;
+  /** Prefill from a suggested move (ISO). Remount with a new key to apply. */
+  initialWhen?: string | null;
+  initialCaption?: string | null;
 }) {
   const isClient = useIsClient();
   const now = useNow();
@@ -72,8 +77,11 @@ export default function ScheduleForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [upload, setUpload] = useState<UploadState>({ kind: "idle" });
-  const [caption, setCaption] = useState("");
-  const [when, setWhen] = useState(""); // "" = use the suggested slot
+  const [caption, setCaption] = useState(initialCaption ?? "");
+  // "" = use the suggested slot
+  const [when, setWhen] = useState(() =>
+    initialWhen && Date.parse(initialWhen) > Date.now() ? toLocalInputValue(new Date(initialWhen)) : ""
+  );
   const [shareToFeed, setShareToFeed] = useState(true);
   const [trial, setTrial] = useState(false);
   const [trialStrategy, setTrialStrategy] = useState<"SS_PERFORMANCE" | "MANUAL">("SS_PERFORMANCE");

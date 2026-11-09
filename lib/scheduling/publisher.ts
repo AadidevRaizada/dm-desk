@@ -16,10 +16,16 @@ import { decryptToken } from "@/lib/meta/oauth";
 import { RECONNECT_PREFIX } from "@/lib/scheduling/rules";
 import {
   absolutePath,
+  probeVideo,
   removeFile,
   signedVideoUrl,
   thumbOffsetFromCover,
 } from "@/lib/scheduling/storage";
+
+/** Hook-test variants keep their video after publishing (see above). */
+export function keepsVideo(kind: string | null | undefined): boolean {
+  return kind === "trial_variant";
+}
 
 /**
  * Publishes scheduled reels. Called every minute by the worker loop and by
@@ -204,6 +210,13 @@ export async function publishClaimedPost(
 
     const media = await publishMediaContainer(token, igUserId, containerId);
     const permalink = await getMediaPermalink(token, media.id).catch(() => null);
+    // The strategy engine needs the reel length (watch time ÷ length) after
+    // the file is gone, so read it now if it wasn't stored at upload.
+    const durationSec =
+      post.durationSec ??
+      (await probeVideo(absVideo)
+        .then((p) => (p.durationSec > 0 ? p.durationSec : null))
+        .catch(() => null));
 
     await prisma.scheduledPost.update({
       where: { id },
@@ -213,10 +226,13 @@ export async function publishClaimedPost(
         permalink,
         publishedAt: opts.now(),
         error: null,
+        durationSec,
       },
     });
-    // The reel lives on Instagram now; keep only the small cover.
-    await removeFile(post.videoPath);
+    // The reel lives on Instagram now; keep only the small cover. Test
+    // variants keep their file for "repost the winner" (removed by the
+    // strategy evaluator after VARIANT_FILE_TTL_DAYS).
+    if (!keepsVideo(post.kind)) await removeFile(post.videoPath);
     console.log(`[Scheduler] Published ${id} → ${permalink ?? media.id}`);
     return "published";
   } catch (err) {
@@ -392,7 +408,7 @@ async function recoverStalePosts(opts: Resolved, summary: PublishSummary): Promi
               error: null,
             },
           });
-          await removeFile(post.videoPath);
+          if (!keepsVideo(post.kind)) await removeFile(post.videoPath);
           summary.published += 1;
           continue;
         }

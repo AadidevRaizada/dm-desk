@@ -37,8 +37,10 @@ export const HOOK_COACH_TTL_SECONDS = 30 * 60;
 const INSIGHTS_CONCURRENCY = 6;
 const MAX_HOOK_CHARS = 120;
 // Bump when the payload shape changes so stale snapshots are ignored.
-const SNAPSHOT_VERSION = 1;
+const SNAPSHOT_VERSION = 2;
 
+// follows / profile_visits are only valid for FEED and STORY media, so they
+// are never requested for reels.
 const REEL_METRICS = [
   "views",
   "reach",
@@ -48,8 +50,6 @@ const REEL_METRICS = [
   "comments",
   "ig_reels_avg_watch_time",
   "reels_skip_rate",
-  "follows",
-  "profile_visits",
 ] as const;
 
 const OTHER_METRICS = [
@@ -59,6 +59,8 @@ const OTHER_METRICS = [
   "shares",
   "likes",
   "comments",
+  "follows",
+  "profile_visits",
 ] as const;
 
 // Retried alone when the full reel set fails for an unparseable reason.
@@ -165,7 +167,7 @@ function ratio(numerator: number | null, denominator: number | null) {
 }
 
 /** Meta documents skip rate as a percentage, but accept 0-1 too. */
-function normaliseSkipRate(value: number | undefined): number | null {
+export function normaliseSkipRate(value: number | null | undefined): number | null {
   if (value === undefined || value === null || !Number.isFinite(value)) {
     return null;
   }
@@ -205,7 +207,8 @@ function offendingMetrics(message: string, requested: string[]): string[] {
 /* Insights                                                            */
 /* ------------------------------------------------------------------ */
 
-type InsightValues = Record<string, number>;
+/** Requested metric → value; null when Meta returned nothing for it. */
+type InsightValues = Record<string, number | null | undefined>;
 
 interface InsightRunState {
   /** Metrics Meta has rejected for a media kind during this run. */
@@ -220,11 +223,11 @@ async function tryInsights(
   metrics: string[]
 ): Promise<{ ok: true; values: InsightValues } | { ok: false; error: unknown }> {
   try {
-    const values = (await getMediaInsights(
+    const values: InsightValues = await getMediaInsights(
       accessToken,
       mediaId,
       metrics
-    )) as unknown as InsightValues;
+    );
     return { ok: true, values };
   } catch (error) {
     return { ok: false, error };

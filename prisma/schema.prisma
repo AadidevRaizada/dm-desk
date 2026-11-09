@@ -80,6 +80,8 @@ model Workspace {
   coachAnalyses     CoachAnalysis[]
   coachChats        CoachChat[]
   scheduledPosts    ScheduledPost[]
+  strategyExperiments StrategyExperiment[]
+  strategyTags      StrategyTag[]
 
   @@index([ownerId])
 }
@@ -188,14 +190,77 @@ model ScheduledPost {
   error              String?
   attempts           Int       @default(0)
   publishedAt        DateTime?
+  /// Posting strategy: "normal" | "trial_variant" (one arm of an A/B test) | "repost" (re-edit of an old reel).
+  kind               String    @default("normal")
+  experimentId       String?
+  /// "A", "B", ... inside an experiment.
+  variantLabel       String?
+  /// On-screen hook burned into the first seconds (variants and reposts).
+  hook               String?
+  /// Instagram media id this was re-edited from (reposts and tests built on a posted reel).
+  sourceMediaId      String?
+  /// Video length, probed before the file is deleted after publishing.
+  durationSec        Float?
+  /// The creator confirmed they tapped "Share to everyone" on this trial.
+  graduatedAt        DateTime?
+  /// Latest insights pulled by the strategy evaluator, plus one snapshot per checkpoint.
+  metrics            Json?
+  metricsAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  instagramAccount InstagramAccount    @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  experiment       StrategyExperiment? @relation(fields: [experimentId], references: [id], onDelete: SetNull)
+
+  @@index([status, scheduledAt])
+  @@index([workspaceId, scheduledAt])
+  @@index([experimentId])
+}
+
+/// A hook A/B test (several trial reels) or a remix-and-repost of an old reel.
+model StrategyExperiment {
+  id                 String    @id @default(cuid())
+  workspaceId        String
+  instagramAccountId String
+  /// "ab_test" | "repost"
+  kind               String
+  name               String
+  /// "hook" | "cover" | "caption" | "length" | "first_frame"
+  variable           String    @default("hook")
+  /// "draft" (rendering) | "scheduled" | "running" | "deciding" | "decided" | "no_winner" | "cancelled"
+  status             String    @default("draft")
+  sourceMediaId      String?
+  winnerPostId       String?
+  /// What to render and when (variant specs, caption, start time) plus render progress.
+  plan               Json?
+  decidedAt          DateTime?
+  /// Scores, reasons and the suggested next test (see lib/strategy/evaluate.ts).
+  decision           Json?
+  error              String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  posts            ScheduledPost[]
 
-  @@index([status, scheduledAt])
-  @@index([workspaceId, scheduledAt])
+  @@index([workspaceId, createdAt])
+  @@index([status])
+}
+
+/// Cached format/topic tags for his reels (model-derived from caption + hook).
+model StrategyTag {
+  id          String   @id @default(cuid())
+  workspaceId String
+  mediaId     String
+  format      String
+  topic       String
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, mediaId])
 }
 
 model AiProviderCredential {
@@ -272,6 +337,7 @@ model InstagramAccount {
   apiSnapshots      ApiSnapshot[]
 
   scheduledPosts    ScheduledPost[]
+  strategyExperiments StrategyExperiment[]
 
   @@index([workspaceId])
 }

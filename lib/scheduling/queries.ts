@@ -16,6 +16,11 @@ export interface ScheduledPostView {
   attempts: number;
   publishedAt: string | null;
   hasCover: boolean;
+  /** "normal" | "trial_variant" | "repost" */
+  kind: string;
+  variantLabel: string | null;
+  experimentId: string | null;
+  hook: string | null;
 }
 
 export interface ScheduleData {
@@ -85,6 +90,10 @@ export async function getScheduleData(workspaceId: string): Promise<ScheduleData
     attempts: r.attempts,
     publishedAt: r.publishedAt?.toISOString() ?? null,
     hasCover: Boolean(r.coverPath),
+    kind: r.kind,
+    variantLabel: r.variantLabel,
+    experimentId: r.experimentId,
+    hook: r.hook,
   }));
 
   return {

@@ -199,6 +199,12 @@ function Row({ post, children }: { post: ScheduledPostView; children: React.Reac
         <p className="line-clamp-2 text-sm">
           {post.caption || <span className="text-muted-foreground">No caption</span>}
         </p>
+        {post.kind !== "normal" ? (
+          <p className="mb-0.5 text-xs font-semibold">
+            {post.kind === "repost" ? "Remix" : `Hook test ${post.variantLabel ?? ""}`}
+            {post.hook ? <span className="font-normal text-muted-foreground"> · “{post.hook}”</span> : null}
+          </p>
+        ) : null}
         <p className="mb-1.5 text-xs text-muted-foreground">
           @{post.username}
           {post.shareToFeed ? "" : " · Reels only"}

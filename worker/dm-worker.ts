@@ -5,6 +5,7 @@ import { createDMWorker } from "@/lib/queue/dm-worker";
 import { recordWorkerHeartbeat } from "@/lib/ops/worker-health";
 import { reconcileComments } from "@/lib/polling/comment-reconciler";
 import { publishDuePosts } from "@/lib/scheduling/publisher";
+import { evaluateExperiments } from "@/lib/strategy/evaluate";
 import os from "node:os";
 
 const worker = createDMWorker();
@@ -97,10 +98,33 @@ async function publishTick() {
 const publishTimer = setInterval(() => void publishTick(), PUBLISH_INTERVAL_MS);
 setTimeout(() => void publishTick(), 15_000);
 
+// Posting strategy: pull trial insights at 24/48/72/96 h and call hook-test
+// winners. /api/cron/evaluate-experiments is a backup caller (idempotent).
+const EVALUATE_INTERVAL_MS = 15 * 60_000;
+let evaluateRunning = false;
+async function evaluateTick() {
+  if (evaluateRunning) return;
+  evaluateRunning = true;
+  try {
+    const result = await evaluateExperiments();
+    if (result.pulled || result.decided || result.noWinner || result.errors) {
+      console.log("[DM Worker] Strategy experiments:", JSON.stringify(result));
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[DM Worker] Strategy evaluation failed:", message);
+  } finally {
+    evaluateRunning = false;
+  }
+}
+const evaluateTimer = setInterval(() => void evaluateTick(), EVALUATE_INTERVAL_MS);
+setTimeout(() => void evaluateTick(), 45_000);
+
 async function shutdown(signal: string) {
   console.log(`[DM Worker] ${signal} received, closing worker`);
   clearInterval(heartbeatTimer);
   clearInterval(publishTimer);
+  clearInterval(evaluateTimer);
   if (pollTimer) clearTimeout(pollTimer);
   await worker.close();
   process.exit(0);
