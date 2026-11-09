@@ -20,9 +20,9 @@ export default function PublicSiteHeader({ active }: PublicSiteHeaderProps) {
         <Link
           href="/"
           className="flex items-center gap-3"
-          aria-label="OpenInstaDM home"
+          aria-label="DM Desk home"
         >
-          <span className="text-lg font-bold text-white">OpenInstaDM</span>
+          <span className="text-lg font-bold text-white">DM Desk</span>
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">

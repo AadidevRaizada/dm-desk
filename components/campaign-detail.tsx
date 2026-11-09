@@ -14,7 +14,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
+import { sfx } from "@/lib/handdrawn";
+import { HdStamp } from "@/components/handdrawn/hd-bits";
 import {
   ArrowLeft,
   ArrowSquareOut,
@@ -93,6 +95,8 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
   // instantly while the PATCH is in flight; router.refresh() then re-renders
   // the server component with the authoritative value.
   const [toggledActive, setToggledActive] = useState<boolean | null>(null);
+  // Shows the "Live!" stamp once, right after going live in this visit.
+  const [justWentLive, setJustWentLive] = useState(false);
 
   const isActive = toggledActive ?? campaign.isActive;
 
@@ -133,13 +137,17 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
       // data instead of diverging until the next full reload.
       if (!res.ok) return;
       setToggledActive(!isActive);
-      gooeyToast.success(isActive ? "Campaign paused" : "Campaign activated");
+      if (!isActive) {
+        sfx("yes"); // went live
+        setJustWentLive(true);
+      }
+      gooeyToast.success(isActive ? "Paused" : "It's live");
       // Re-render the server component so the fresh toggle state streams back
       // from the page instead of a client fetch.
       router.refresh();
     },
     onError: () => {
-      gooeyToast.error("Could not update campaign");
+      gooeyToast.error("Couldn't switch it. Try again.");
     },
   });
 
@@ -188,18 +196,18 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
         label: "DMs sent",
         value: a.sent.toLocaleString(),
         hint: `${sentRate}% of ${runs.toLocaleString()} runs`,
-        tint: "bg-sky-500/12 text-sky-600 dark:text-sky-400",
+        tint: "bg-elephant text-ink border-2 border-ink",
         bar: sentRate,
-        barTint: "bg-sky-500",
+        barTint: "bg-elephant",
       },
       {
         icon: <CursorClick weight="bold" className="size-4" />,
         label: "Link clicks",
         value: a.clicks.toLocaleString(),
         hint: `${a.ctr}% click-through`,
-        tint: "bg-violet-500/12 text-violet-600 dark:text-violet-400",
+        tint: "bg-owl text-ink border-2 border-ink",
         bar: Math.min(a.ctr, 100),
-        barTint: "bg-violet-500",
+        barTint: "bg-owl",
       },
       {
         icon: <Checks weight="bold" className="size-4" />,
@@ -221,9 +229,9 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
         tint:
           a.failed > 0
             ? "bg-destructive/10 text-destructive"
-            : "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
+            : "bg-ok/12 text-ok",
         bar: runs > 0 ? Math.min((a.failed / runs) * 100, 100) : 0,
-        barTint: a.failed > 0 ? "bg-destructive" : "bg-emerald-500",
+        barTint: a.failed > 0 ? "bg-destructive" : "bg-ok",
       },
     ],
     [a, runs, sentRate],
@@ -241,7 +249,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
   return (
     <div className="space-y-5">
       {/* ── Hero header ─────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-border bg-linear-to-l from-card dark:to-lime-600/20 to-lime-300/20">
+      <section className="hr1 overflow-hidden border-[2.5px] border-ink bg-card">
         <div className="px-5 pb-5 pt-4 sm:px-7">
           <Link
             href="/campaigns"
@@ -251,7 +259,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
             )}
           >
             <ArrowLeft weight="bold" className="size-4" />
-            Campaigns
+            Automations
           </Link>
 
           <div className="mt-3 flex flex-wrap items-start gap-4">
@@ -260,20 +268,21 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
               <img
                 src={postThumb}
                 alt=""
-                className="size-16 shrink-0 rounded-2xl border border-border object-cover sm:size-20"
+                className="hr2 size-16 shrink-0 border-2 border-ink object-cover sm:size-20"
               />
             ) : (
-              <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-muted text-muted-foreground sm:size-20">
+              <span className="hr2 grid size-16 shrink-0 place-items-center border-2 border-ink bg-muted text-muted-foreground sm:size-20">
                 <ImageIcon weight="bold" className="size-6" />
               </span>
             )}
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight sm:text-2xl">
+                <h1 className="min-w-0 truncate font-display text-3xl leading-none sm:text-4xl">
                   {campaign.name}
                 </h1>
                 <StatusPill active={isActive} />
+                {justWentLive && isActive ? <HdStamp>Live!</HdStamp> : null}
               </div>
               <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-muted-foreground">
                 <span className="font-medium text-foreground">
@@ -346,11 +355,8 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
                 <Button
                   onClick={() => void toggleActive()}
                   disabled={toggleMutation.isPending}
-                  size="sm"
-                  variant={isActive ? "destructive" : "default"}
-                  className={cn(
-                    !isActive && "bg-emerald-600 hover:bg-emerald-600/85",
-                  )}
+                  variant={isActive ? "outline" : "hero"}
+                  className={cn(!isActive && "clicky")}
                 >
                   {isActive ? (
                     <>
@@ -360,7 +366,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
                   ) : (
                     <>
                       <Play weight="fill" className="size-4" />
-                      {toggleMutation.isPending ? "Resuming…" : "Resume"}
+                      {toggleMutation.isPending ? "Going live…" : "Go live"}
                     </>
                   )}
                 </Button>
@@ -506,7 +512,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
                       {copied === `post-${campaign.id}` ? (
                         <Check
                           weight="bold"
-                          className="size-3.5 shrink-0 text-emerald-500"
+                          className="size-3.5 shrink-0 text-ok"
                         />
                       ) : (
                         <Copy weight="bold" className="size-3.5 shrink-0" />
@@ -673,7 +679,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
                           {copied === link.id ? (
                             <Check
                               weight="bold"
-                              className="size-4 shrink-0 text-emerald-500"
+                              className="size-4 shrink-0 text-ok"
                             />
                           ) : (
                             <Copy
@@ -738,7 +744,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
                 Exactly what a follower sees on Instagram.
               </p>
             </div>
-            <div className="bg-linear-to-b from-muted/60 to-transparent px-4 pb-5 pt-4">
+            <div className="bg-muted px-4 pb-5 pt-4">
               <CampaignPreview
                 tab={previewTab}
                 onTabChange={setPreviewTab}
@@ -885,24 +891,18 @@ function StatusPill({ active }: { active: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border-[1.6px] border-current px-2.5 py-1 text-xs font-semibold",
         active
-          ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400"
+          ? "bg-ok/12 text-ok"
           : "bg-muted text-muted-foreground",
       )}
     >
-      <span className="relative flex size-1.5">
-        {active && (
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-        )}
-        <span
-          className={cn(
-            "relative inline-flex size-1.5 rounded-full",
-            active ? "bg-emerald-500" : "bg-zinc-400",
-          )}
-        />
-      </span>
-      {active ? "Active" : "Paused"}
+      {active ? (
+        <span className="live" />
+      ) : (
+        <span className="inline-flex size-1.5 rounded-full bg-hd-muted" />
+      )}
+      {active ? "Live" : "Paused"}
     </span>
   );
 }

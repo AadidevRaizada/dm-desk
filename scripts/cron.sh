@@ -25,9 +25,12 @@ call() {
   route="$1"
   stamp=$(date -u '+%Y-%m-%d %H:%M:%S')
 
-  if body=$(wget -q -O- --timeout=180 \
-      --header="Authorization: Bearer $SECRET" \
-      "$BASE_URL/api/cron/$route" 2>&1); then
+  if command -v wget >/dev/null 2>&1; then
+    body=$(wget -q -O- --timeout=180 --header="Authorization: Bearer $SECRET" "$BASE_URL/api/cron/$route" 2>&1); rc=$?
+  else
+    body=$(curl -fsS --max-time 180 -H "Authorization: Bearer $SECRET" "$BASE_URL/api/cron/$route" 2>&1); rc=$?
+  fi
+  if [ $rc -eq 0 ]; then
     echo "[cron] $stamp $route ok $body"
   else
     # A failure is worth shouting about: these jobs have no user watching them.

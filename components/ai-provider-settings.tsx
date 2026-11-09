@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Combobox } from "@base-ui/react/combobox";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
 import { AI_PROVIDERS, AI_PROVIDER_IDS, type AiProvider } from "@/lib/ai/providers";
 import { useWorkspaceContext, isOwner } from "@/lib/workspace-context";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export function AiProviderSettings({ provider, model, onProviderChange, onModelC
             </div>
             <Combobox.Portal>
               <Combobox.Positioner sideOffset={4} className="z-50">
-                <Combobox.Popup className="max-h-72 w-[var(--anchor-width)] overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                <Combobox.Popup className="max-h-72 w-[var(--anchor-width)] overflow-auto rounded-md border bg-popover p-1 text-popover-foreground">
                   <Combobox.Empty className="p-2 text-sm">No matching models. Clear the search to choose Custom model ID.</Combobox.Empty>
                   <Combobox.List>
                     {(item: typeof CUSTOM) => (

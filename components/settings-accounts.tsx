@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
 import { ArrowSquareOut } from "@phosphor-icons/react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +75,7 @@ export default function SettingsAccounts({
       <CardContent className="gap-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-foreground">
+            <h2 className="font-display text-2xl leading-tight text-foreground">
               Instagram Connection
             </h2>
             <p className="text-sm text-muted-foreground">

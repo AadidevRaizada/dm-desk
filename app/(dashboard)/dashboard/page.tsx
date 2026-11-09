@@ -3,11 +3,10 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  HandWavingIcon,
-  InstagramLogoIcon,
+  FilmSlate,
   Megaphone,
   PaperPlaneTilt,
-  RocketLaunchIcon,
+  PlusIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import AccountUrlFilter from "@/components/account-url-filter";
 import CountUp from "@/components/count-up";
@@ -24,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getDashboardInsights, getDashboardSummary } from "@/lib/server/stats";
 import { getCurrentWorkspaceContext } from "@/lib/workspace-access";
+import { CritterArt } from "@/components/handdrawn/critter-art";
+import { HdPageHead } from "@/components/handdrawn/hd-bits";
 
 /**
  * Dashboard Home Page (Server Component)
@@ -61,18 +62,18 @@ function SummarySkeleton() {
         <Skeleton className="h-8 w-56" />
       </div>
       <div className="grid gap-4  lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-xs">
+        <div className="lg:col-span-2 hr1 border-[2.5px] border-ink bg-card p-6">
           <Skeleton className="h-4 w-36" />
           <Skeleton className="mt-4 h-10 w-24" />
           <Skeleton className="mt-3 h-4 w-48" />
         </div>
-        <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+        <div className="hr1 border-[2.5px] border-ink bg-card p-6">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="mt-4 h-10 w-24" />
           <Skeleton className="mt-3 h-2 w-full" />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-6 rounded-xl border border-border bg-card px-5 py-4 shadow-xs sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 hr3 border-[2.5px] border-ink bg-card px-5 py-4 sm:grid-cols-3">
         {[...Array(3)].map((_, i) => (
           <Skeleton key={i} className="h-9 w-24" />
         ))}
@@ -84,11 +85,11 @@ function SummarySkeleton() {
 function InsightsSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 ">
-      <div className="lg:col-span-3 rounded-xl border border-border bg-card p-6 shadow-xs">
+      <div className="lg:col-span-3 hr1 border-[2.5px] border-ink bg-card p-6">
         <Skeleton className="h-4 w-36" />
         <Skeleton className="mt-4 h-44 w-full" />
       </div>
-      <div className="lg:col-span-1 rounded-xl border border-border bg-card p-6 shadow-xs">
+      <div className="lg:col-span-1 hr1 border-[2.5px] border-ink bg-card p-6">
         <Skeleton className="h-4 w-28" />
         <div className="mt-4 space-y-3">
           {[...Array(4)].map((_, i) => (
@@ -96,7 +97,7 @@ function InsightsSkeleton() {
           ))}
         </div>
       </div>
-      <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-xs">
+      <div className="lg:col-span-2 hr1 border-[2.5px] border-ink bg-card p-6">
         <Skeleton className="h-4 w-32" />
         <div className="mt-4 space-y-3">
           {[...Array(4)].map((_, i) => (
@@ -110,7 +111,7 @@ function InsightsSkeleton() {
 
 const DashboardChart = dynamic(() => import("@/components/dashboard-chart"), {
   loading: () => (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+    <div className="hr1 border-[2.5px] border-ink bg-card p-6">
       <Skeleton className="h-4 w-36" />
       <Skeleton className="mt-4 h-44 w-full" />
     </div>
@@ -148,68 +149,59 @@ async function SummaryRegion({
   return (
     <>
       {/* Greeting */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-medium tracking-tighter text-foreground sm:text-3xl lg:text-4xl inline-flex items-center gap-2">
-            Hello,{" "}
-            <span className="bg-linear-to-br from-primary to-foreground bg-clip-text text-transparent">
-              {stats.userName ?? "there"}!
-            </span>
-            <span>
-              <HandWavingIcon
-                className="size-8 text-yellow-400 wobble-hor-bottom"
-                weight="duotone"
+      <HdPageHead
+        area="home"
+        title={<>Hi, {stats.userName ?? "there"}!</>}
+        line="Here is what your DMs did."
+        actions={
+          <>
+            <Link
+              href="/schedule"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "clicky h-11 px-4 text-base",
+              )}
+            >
+              <FilmSlate className="size-5" weight="bold" /> Schedule a reel
+            </Link>
+            {stats.instagramAccounts.length > 1 ? (
+              <AccountUrlFilter
+                accounts={stats.instagramAccounts}
+                value={selectedAccountId}
               />
-            </span>
-          </h1>
-          {/* <p className="mt-1 text-sm text-muted-foreground">
-            {connectedCount} connected{" "}
-            {connectedCount === 1 ? "account" : "accounts"}
-          </p> */}
-        </div>
-        {stats.instagramAccounts.length > 1 && (
-          <AccountUrlFilter
-            accounts={stats.instagramAccounts}
-            value={selectedAccountId}
-          />
-        )}
-      </div>
+            ) : null}
+          </>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card
-          className="bg-linear-to-b from-lime-200 dark:from-lime-500 to-lime-300 text-black border-2 shadow-[0_10px_28px_rgba(132,204,22,0.3)]"
-          style={{
-            boxShadow: "inset 0 10px 20px lab(99 2.34 0.77 / 0.3)",
-          }}
-        >
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 tracking-tight">
-              <InstagramLogoIcon weight="duotone" className="size-5" />
-              Get Started
-            </CardTitle>
+            <CardTitle>New automation</CardTitle>
           </CardHeader>
-          <CardContent className="pb-0 justify-end h-full">
-            <p className="text-3xl font-semibold tracking-[-7%] leading-tight">
-              Create New <span className="italic font-bold">Campaign!</span>
-            </p>
+          <CardContent className="h-full justify-end">
+            <div className="flex items-end gap-3">
+              <CritterArt area="campaigns" className="w-20 shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                Someone comments a word, they get your DM.
+              </p>
+            </div>
             <Link
               href="/campaigns/new"
               className={cn(
-                buttonVariants({ variant: "secondary", size: "lg" }),
-                "h-12 justify-center rounded-full text-base tracking-tight bg-linear-to-b from-secondary dark:to-black to-white px-6 mt-auto dark:shadow-[0_2px_0_1px_var(--secondary)]",
+                buttonVariants({ variant: "hero", size: "lg" }),
+                "clicky mt-auto h-12 w-full text-xl",
               )}
             >
-              Lets Go <RocketLaunchIcon className="size-4 ml-2" weight="bold" />
+              <PlusIcon className="size-5" weight="bold" /> Make one
             </Link>
           </CardContent>
         </Card>
 
-        <Card className="relative">
-          <div className="absolute w-2/5 h-4/5 bg-lime-700/30 -top-20 -right-30 pointer pointer-events-none rounded-full blur-3xl"></div>
-          <div className="absolute w-2/5 h-4/5 bg-lime-700/30 -bottom-20 -left-30 pointer pointer-events-none rounded-full blur-3xl"></div>
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PaperPlaneTilt weight="fill" className="size-4 text-primary" />
+              <PaperPlaneTilt weight="fill" className="size-4" />
               DMs sent this week
             </CardTitle>
             <CardAction>
@@ -217,12 +209,12 @@ async function SummaryRegion({
                 href="/logs"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
               >
-                View logs
+                See log
               </Link>
             </CardAction>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
+            <p className="font-display text-6xl leading-none text-foreground">
               <CountUp value={stats.dmsSentWeek} />
             </p>
             <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
@@ -242,13 +234,11 @@ async function SummaryRegion({
           </CardContent>
         </Card>
 
-        <Card className="relative">
-          <div className="absolute w-2/5 h-4/5 bg-lime-700/30 top-20 -right-30 pointer pointer-events-none rounded-full blur-3xl"></div>
-          <div className="absolute w-2/5 h-4/5 bg-lime-700/30 bottom-20 -left-30 pointer pointer-events-none rounded-full blur-3xl"></div>
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Megaphone weight="fill" className="size-4 text-primary" />
-              Active campaigns
+              <Megaphone weight="fill" className="size-4" />
+              Automations on
             </CardTitle>
             <CardAction>
               <Link
@@ -260,7 +250,7 @@ async function SummaryRegion({
             </CardAction>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
+            <p className="font-display text-6xl leading-none text-foreground">
               <CountUp value={stats.activeAutomations} />
               <span className="text-lg font-medium text-muted-foreground">
                 {" "}
@@ -268,57 +258,57 @@ async function SummaryRegion({
               </span>
             </p>
             <div
-              className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
+              className="hr1 mt-3 h-3 overflow-hidden border-2 border-ink bg-paper"
               role="progressbar"
               aria-valuenow={stats.activeAutomations}
               aria-valuemin={0}
               aria-valuemax={stats.totalAutomations}
             >
               <div
-                className="h-full rounded-full bg-primary transition-all duration-700 ease-out shadow-[0_0_6px_var(--primary)]"
+                className="h-full bg-ok"
                 style={{ width: `${campaignPct}%` }}
               />
             </div>
             <p className="mt-1.5 text-xs text-muted-foreground">
-              {campaignPct}% of campaigns running
+              {campaignPct}% are on
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Secondary metric strip — engagement + audience + health, no card boxes. */}
-      <div className="grid grid-cols-1 gap-6 rounded-xl border border-border px-5 sm:py-6 py-14 bg-background glow-card shadow-xs sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-border">
+      <div className="hr3 grid grid-cols-2 gap-4 border-[2.5px] border-ink bg-paper2 px-5 py-5 sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-border">
         <div className="sm:px-5 sm:first:pl-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-xs font-semibold text-muted-foreground">
             Clicks this month
           </p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+          <p className="mt-1 font-display text-3xl leading-none tabular-nums text-foreground">
             <CountUp value={stats.clicksThisMonth} />
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:px-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Click-through rate
+        <div className="sm:px-5">
+          <p className="text-xs font-semibold text-muted-foreground">
+            Click rate
           </p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+          <p className="mt-1 font-display text-3xl leading-none tabular-nums text-foreground">
             <CountUp value={stats.ctrThisMonth} decimals={1} />
             <span className="text-sm font-medium text-muted-foreground">%</span>
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:px-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="sm:px-5">
+          <p className="text-xs font-semibold text-muted-foreground">
             Contacts
           </p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+          <p className="mt-1 font-display text-3xl leading-none tabular-nums text-foreground">
             <CountUp value={stats.contactsCount} />
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:px-5 sm:last:pr-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="sm:px-5 sm:last:pr-0">
+          <p className="text-xs font-semibold text-muted-foreground">
             Failed this month
           </p>
           <p
-            className={`mt-1 text-xl font-semibold tabular-nums ${
+            className={`mt-1 font-display text-3xl leading-none tabular-nums ${
               stats.dmsFailedMonth > 0 ? "text-destructive" : "text-foreground"
             }`}
           >
@@ -368,9 +358,12 @@ async function InsightsRegion({
             </CardHeader>
             <CardContent>
               {stats.topKeywords.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  No keyword matches yet
-                </p>
+                <div className="flex flex-col items-center py-4 text-center">
+                  <CritterArt area="campaigns" mood="sleep" className="w-16" />
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    No keywords hit yet. The beaver is waiting.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {stats.topKeywords.map((keyword) => (
@@ -383,9 +376,9 @@ async function InsightsRegion({
                           {keyword.count}
                         </span>
                       </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className="hr2 h-2.5 overflow-hidden border-[1.8px] border-ink bg-paper">
                         <div
-                          className="h-full rounded-full bg-primary/60"
+                          className="h-full bg-fox"
                           style={{
                             width: `${maxKeyword ? (keyword.count / maxKeyword) * 100 : 0}%`,
                           }}
@@ -407,9 +400,12 @@ async function InsightsRegion({
             </CardHeader>
             <CardContent>
               {stats.recentLogs.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  No activity yet
-                </p>
+                <div className="flex flex-col items-center py-4 text-center">
+                  <CritterArt area="home" mood="sleep" className="w-16" />
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Nothing yet. The fox is having a nap.
+                  </p>
+                </div>
               ) : (
                 <div className="max-h-64 divide-y divide-border overflow-y-auto pr-1">
                   {stats.recentLogs.map((log) => (
@@ -426,7 +422,7 @@ async function InsightsRegion({
                             </span>
                           )}
                         </p>
-                        <p className="mt-0.5 truncate text-xs bg-linear-to-tl from-fuchsia-500 via-red-600 to-orange-400 text-transparent bg-clip-text">
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {log.instagramAccount
                             ? `@${log.instagramAccount.username} · `
                             : ""}

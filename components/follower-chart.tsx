@@ -63,7 +63,7 @@ function ChartTooltip({
   const point = payload[0].payload;
 
   return (
-    <div className="rounded border border-border bg-muted px-3 py-2 text-xs shadow-lg">
+    <div className="hr2 border-2 border-ink bg-paper2 px-3 py-2 text-xs">
       <p className="text-muted-foreground">{formatDay(point.date)}</p>
       <p className="mt-1 font-semibold text-foreground">
         {point.followers.toLocaleString()} followers

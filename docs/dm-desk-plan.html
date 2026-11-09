@@ -1,0 +1,272 @@
+<title>DM Desk Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column (~760px) with wide bands for the UI mockups and tables; sections follow the build order. */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --ink:#151a24; --muted:#5b6474; --line:#dde1e8;
+  --accent:#e2542b; --accent-soft:#fbe7df; --ok:#1f8a5b; --warn:#b7791f; --bad:#c2372f;
+  --chip:#eef1f5;
+  --display:"Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10141b; --surface:#171c25; --ink:#e7eaf0; --muted:#9aa3b2; --line:#2a313d;
+  --accent:#ff7a52; --accent-soft:#3a2219; --ok:#4cc38a; --warn:#e0a94a; --bad:#ef6b62; --chip:#212836; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141b; --surface:#171c25; --ink:#e7eaf0; --muted:#9aa3b2; --line:#2a313d;
+  --accent:#ff7a52; --accent-soft:#3a2219; --ok:#4cc38a; --warn:#e0a94a; --bad:#ef6b62; --chip:#212836; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:17px/1.6 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.col{max-width:760px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.6rem;font-weight:700;margin-bottom:14px}
+h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+p{margin:0 0 12px}
+.eyebrow{font:600 .75rem/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:12px}
+.lede{font-size:1.2rem;color:var(--muted);max-width:62ch}
+code,.mono{font-family:var(--mono);font-size:.85em}
+code{background:var(--chip);padding:1px 6px;border-radius:4px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid>*{min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.tag{display:inline-block;font:600 .72rem/1 var(--mono);padding:5px 8px;border-radius:999px;background:var(--chip);color:var(--muted);letter-spacing:.04em}
+.tag.ok{color:var(--ok)} .tag.warn{color:var(--warn)} .tag.bad{color:var(--bad)} .tag.acc{background:var(--accent-soft);color:var(--accent)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.95rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .75rem/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.clicks{font:700 1rem var(--mono);color:var(--accent);white-space:nowrap}
+ul{margin:0;padding-left:20px} li{margin-bottom:6px}
+.note{border-left:3px solid var(--warn);padding:10px 16px;background:var(--surface);border-radius:0 8px 8px 0}
+/* phone mockups */
+.phones{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.phone{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.phone .bar{display:flex;justify-content:space-between;align-items:center;font:600 .8rem var(--display)}
+.phone .tabs{display:flex;gap:4px;margin-top:auto;border-top:1px solid var(--line);padding-top:8px}
+.phone .tabs span{flex:1;text-align:center;font:600 .66rem var(--mono);color:var(--muted);padding:4px 0;border-radius:6px}
+.phone .tabs span.on{color:var(--accent);background:var(--accent-soft)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.85rem;padding:8px 10px;background:var(--chip);border-radius:8px}
+.row b{font-weight:600}
+.tog{width:30px;height:17px;border-radius:9px;background:var(--ok);position:relative;flex:none}
+.tog::after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:var(--surface)}
+.tog.off{background:var(--line)} .tog.off::after{right:auto;left:2px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kpi{background:var(--chip);border-radius:8px;padding:8px}
+.kpi small{display:block;font:600 .62rem var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi strong{font:700 1.1rem var(--display);font-variant-numeric:tabular-nums}
+.btn{display:block;text-align:center;font:700 .85rem var(--display);padding:9px;border-radius:8px;background:var(--accent);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.bubble{font-size:.8rem;padding:7px 10px;border-radius:12px;max-width:85%}
+.bubble.in{background:var(--chip)} .bubble.out{background:var(--accent-soft);align-self:flex-end}
+.spark{width:100%;height:46px}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:start}
+.step>*{min-width:0}
+.who{font:600 .72rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-radius:6px;text-align:center}
+.who.me{background:var(--accent-soft);color:var(--accent)}
+.who.you{background:var(--chip);color:var(--ink)}
+.who.friend{background:var(--chip);color:var(--ok)}
+pre.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto}
+a{color:var(--accent)}
+@media (max-width:520px){.step{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+
+<header class="col">
+  <div class="eyebrow">Plan · 9 Nov 2026 · single account</div>
+  <h1>DM Desk: Instagram automation that runs on your Mac</h1>
+  <p class="lede" style="margin-top:14px">One Instagram account. Your friend clicks <b>Sign in with Instagram</b> and gets auto-DMs, an inbox, stats, and a hook coach. Everything runs on this Mac and uses only Meta's official API, so the account isn't at risk.</p>
+</header>
+
+<section class="col">
+  <div class="eyebrow">Decision</div>
+  <h2>Fork OpenInstaDM rather than build from scratch</h2>
+  <p>We looked at eight open-source options. <a href="https://github.com/Xeven777/openinstadm">OpenInstaDM</a> is the only one that already covers ManyChat-style work on the official API: comment keyword → DM, DM keyword replies, an inbox, a follower chart and tracked links. It's MIT-licensed and built on Next.js. We keep its engine and add three things it lacks: per-post stats, a hook coach, and an Instagram-only login.</p>
+  <div class="tbl" style="margin-top:16px"><table>
+    <thead><tr><th>Option</th><th>Verdict</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><b>OpenInstaDM</b></td><td><span class="tag acc">Base</span></td><td>Official API, uses Instagram Login, has comment→DM and the inbox. Small project (35★), so we read its code before trusting it.</td></tr>
+      <tr><td>Chatwoot</td><td><span class="tag">Skip</span></td><td>Strong inbox but no comment→DM. Too heavy to run for one person.</td></tr>
+      <tr><td>Activepieces / n8n</td><td><span class="tag">Skip</span></td><td>No ready-made Instagram trigger, so every flow gets wired by hand.</td></tr>
+      <tr><td>Postiz</td><td><span class="tag">Later</span></td><td>Good for scheduling posts if he wants that later. Doesn't do DMs.</td></tr>
+      <tr><td>instagrapi, instabot, private-API libraries</td><td><span class="tag bad">Never</span></td><td>They need his password and pretend to be the phone app, which leads to checkpoints and bans.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="eyebrow">System</div>
+    <h2>How it fits together</h2>
+    <p>Meta sends events to the Mac through a fixed public HTTPS address. The Mac replies through the Graph API. Nothing runs in the cloud except Claude for the hook coach.</p>
+  </div>
+<pre class="mermaid">
+flowchart LR
+  IG[Friend's Instagram<br/>Business or Creator] -- comments, DMs, story replies --> META[Meta webhooks]
+  META -- HTTPS POST --> TUN[Tunnel<br/>fixed URL]
+  TUN --> WEB[Next.js app<br/>:3000]
+  WEB --> DB[(Postgres)]
+  WEB --> Q[(Redis queue)]
+  Q --> WK[Worker<br/>sends DMs, polls stats,<br/>refreshes token]
+  WK -- Graph API --> GRAPH[graph.instagram.com]
+  WK -- stats + captions --> AI[Claude API<br/>hook coach]
+  FR[Friend's phone<br/>or laptop] -- Sign in with Instagram --> TUN
+</pre>
+  <div class="grid" style="margin-top:16px">
+    <div class="card"><h3>Runs on the Mac</h3><ul>
+      <li>Web app and worker run as launchd services and restart if they crash</li>
+      <li>Postgres and Redis run through Homebrew services (no Docker)</li>
+      <li>Sleep turned off, auto-restart after a power cut, daily database backup</li>
+      <li>A health check every 5 minutes restarts anything that's stuck</li>
+    </ul></div>
+    <div class="card"><h3>Meta app</h3><ul>
+      <li>Instagram API with Instagram Login, so no Facebook Page is needed</li>
+      <li>Scopes: <code>instagram_business_basic</code>, <code>_manage_messages</code>, <code>_manage_comments</code>, <code>_manage_insights</code></li>
+      <li>Friend added as an Instagram Tester. Standard Access is enough, so no App Review</li>
+      <li>Webhooks: <code>messages</code>, <code>messaging_postbacks</code>, <code>comments</code></li>
+    </ul></div>
+    <div class="card"><h3>Kept alive automatically</h3><ul>
+      <li>The 60-day token refreshes itself daily once fewer than 10 days are left</li>
+      <li>After sign-in, the app subscribes his account to webhooks with one API call</li>
+      <li>Stats are pulled every 3 hours, and reels are re-read for 48 hours while their numbers settle</li>
+      <li>If comment webhooks aren't delivered, the app checks new comments every 60 seconds instead</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="eyebrow">UI</div>
+    <h2>Four tabs, nothing deeper</h2>
+    <p>It's built for a phone and installs to the home screen as a web app. Every screen sits one tap from the bottom bar, and every action takes at most one more tap.</p>
+  </div>
+  <div class="phones">
+    <div class="phone">
+      <div class="bar"><span>Home</span><span class="tag ok">Live</span></div>
+      <div class="kpis">
+        <div class="kpi"><small>DMs sent · 7d</small><strong>412</strong></div>
+        <div class="kpi"><small>Link clicks</small><strong>138</strong></div>
+        <div class="kpi"><small>New follows</small><strong>+96</strong></div>
+        <div class="kpi"><small>Replies waiting</small><strong>3</strong></div>
+      </div>
+      <div class="row"><b>“GUIDE” on latest reel</b><span class="tog"></span></div>
+      <div class="row"><b>Story reply → link</b><span class="tog"></span></div>
+      <div class="row"><b>Welcome first DM</b><span class="tog off"></span></div>
+      <div class="tabs"><span class="on">Home</span><span>Auto</span><span>Inbox</span><span>Stats</span></div>
+    </div>
+    <div class="phone">
+      <div class="bar"><span>New automation</span><span class="mono" style="font-size:.7rem;color:var(--muted)">1 of 1</span></div>
+      <div class="row"><b>Post</b><span>Latest reel ▾</span></div>
+      <div class="row"><b>Keyword</b><span class="mono">GUIDE, link</span></div>
+      <div class="row" style="align-items:flex-start;flex-direction:column"><b>DM</b><span>Here's the guide 👇 [Open guide]</span></div>
+      <div class="row"><b>Public reply</b><span>“Sent! check DMs”</span></div>
+      <span class="btn">Go live</span>
+      <div class="tabs"><span>Home</span><span class="on">Auto</span><span>Inbox</span><span>Stats</span></div>
+    </div>
+    <div class="phone">
+      <div class="bar"><span>@rohan.fit</span><span class="tag warn">19h left</span></div>
+      <div class="bubble in">GUIDE</div>
+      <div class="bubble out">Here's the guide 👇 Open guide</div>
+      <div class="bubble in">does this work for beginners?</div>
+      <div class="row"><span>✨ Suggested reply</span><b>Send</b></div>
+      <div class="tabs"><span>Home</span><span>Auto</span><span class="on">Inbox</span><span>Stats</span></div>
+    </div>
+    <div class="phone">
+      <div class="bar"><span>Stats · last 30d</span><span class="tag">Reels</span></div>
+      <svg class="spark" viewBox="0 0 200 46" preserveAspectRatio="none" aria-label="Views trend, example data">
+        <path d="M0 38 L25 34 L50 36 L75 26 L100 28 L125 18 L150 22 L175 10 L200 12 L200 46 L0 46Z" fill="var(--accent-soft)"/>
+        <path d="M0 38 L25 34 L50 36 L75 26 L100 28 L125 18 L150 22 L175 10 L200 12" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <circle cx="200" cy="12" r="3" fill="var(--accent)"/>
+      </svg>
+      <div class="row"><b>3-sec hold</b><span class="mono">61% <span style="color:var(--ok)">▲</span></span></div>
+      <div class="row"><b>Shares / reach</b><span class="mono">2.4%</span></div>
+      <div class="row"><b>Weakest hook</b><span>“So today I…”</span></div>
+      <span class="btn">Fix my hook</span>
+      <div class="tabs"><span>Home</span><span>Auto</span><span>Inbox</span><span class="on">Stats</span></div>
+    </div>
+  </div>
+  <p style="font-size:.85rem;color:var(--muted);margin-top:8px">Mockup values are made-up examples.</p>
+</section>
+
+<section>
+  <div class="col">
+    <div class="eyebrow">Two-tap rule</div>
+    <h2>Every action, counted from the home screen</h2>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>He wants to…</th><th>Taps</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Turn an automation on or off</td><td class="clicks">1</td><td>Toggle on Home</td></tr>
+      <tr><td>Send a link to anyone who comments a word</td><td class="clicks">2</td><td>Auto → template card. Post defaults to the latest reel, keyword and DM text come pre-filled, then Go live</td></tr>
+      <tr><td>Auto-reply to story replies</td><td class="clicks">2</td><td>Auto → “Story reply” card → Go live</td></tr>
+      <tr><td>Reply to a DM</td><td class="clicks">2</td><td>Inbox → thread. The composer is focused and a suggested reply is ready</td></tr>
+      <tr><td>See how the last reel did</td><td class="clicks">1</td><td>Stats opens on the latest post</td></tr>
+      <tr><td>Get a better hook for a weak reel</td><td class="clicks">2</td><td>Stats → Fix my hook. Shows 5 rewrites and why the original lost viewers</td></tr>
+      <tr><td>Write a hook for a new idea</td><td class="clicks">2</td><td>Stats → Hook coach, type the idea, get hooks in the voice of his best posts</td></tr>
+      <tr><td>Find his best time to post</td><td class="clicks">1</td><td>A card on Stats, built from <code>online_followers</code> and his own history</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Hook coach</div>
+  <h2>What it actually measures</h2>
+  <div class="grid">
+    <div class="card"><h3>Hook</h3><p>3-second hold = 1 − <code>reels_skip_rate</code>. This is the main signal.</p></div>
+    <div class="card"><h3>Retention</h3><p><code>ig_reels_avg_watch_time</code> divided by video length.</p></div>
+    <div class="card"><h3>Spread</h3><p>(Shares + saves) ÷ reach, and follows ÷ reach.</p></div>
+  </div>
+  <p style="margin-top:14px">It diagnoses from those numbers. A high skip rate means the first frame, cover or opening line needs work. A low skip rate with short watch time means viewers drop off mid-video. Claude compares his top and bottom posts, then rewrites the weak opener in the style of hooks that already worked for him.</p>
+</section>
+
+<section>
+  <div class="col">
+    <div class="eyebrow">Setup</div>
+    <h2>Who does what</h2>
+    <p>Claude drives almost every step through the shell and the in-app browser. Meta has no API for creating the app, setting up Instagram webhooks or adding testers, so Claude fills those dashboard forms for you while you're logged in.</p>
+  </div>
+  <div class="steps col">
+    <div class="step"><span class="who you">You · 1 min</span><div>Answer 4 questions (below) and log in to developers.facebook.com once in Claude's browser pane.</div></div>
+    <div class="step"><span class="who me">Claude</span><div>Fork and install OpenInstaDM, install Postgres and Redis, write <code>.env</code>, add the stats, hook coach and Instagram-only login, then set up the launchd services, power settings and tunnel.</div></div>
+    <div class="step"><span class="who me">Claude</span><div>In the Meta dashboard: create the app with the Instagram use case, add the scopes, set the redirect, deauthorize and data-deletion URLs (served by our app, along with a privacy page), connect and verify the webhook, tick the fields, add your friend as an Instagram Tester, and switch the app to Live.</div></div>
+    <div class="step"><span class="who you">You · 1 tap</span><div>Approve the <code>sudo</code> prompt for the power settings and the background service.</div></div>
+    <div class="step"><span class="who friend">Friend · 3 taps</span><div>Switch to a Professional account if he isn't on one. Accept the tester invite (instagram.com → Settings → Apps and websites → Tester invites). Open the link and tap Sign in with Instagram.</div></div>
+    <div class="step"><span class="who me">Claude</span><div>Test it end to end: comment the keyword from another account, check the DM arrives, check stats are filling in, then send you the link.</div></div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Risks</div>
+  <h2>What could go wrong, and the plan for each</h2>
+  <div class="note" style="margin-bottom:12px"><b>Comment webhooks may need Advanced Access.</b> Meta's docs say <code>comments</code> notifications need it, which means App Review. If they don't arrive in Live mode, the app checks his recent posts for new comments every 60 seconds and still sends the private-reply DM. He won't see a difference beyond a delay of up to a minute.</div>
+  <ul>
+    <li><b>24-hour window.</b> We can only DM someone within 24 hours of their last message, and a comment opens one private reply that has to go within 7 days. So there are no mass broadcasts. Follow-ups go out only after the person taps a button.</li>
+    <li><b>Rate limits.</b> Meta allows 750 private replies per hour. The queue holds us to about 200 per hour to stay safely under that.</li>
+    <li><b>The Mac goes offline.</b> Meta retries webhooks for 36 hours, so after a short outage the queue catches up.</li>
+    <li><b>Token expiry.</b> It refreshes automatically. If it ever lapses, Home shows a single “Reconnect Instagram” button.</li>
+    <li><b>OpenInstaDM is a young project.</b> We pin the commit we fork from and read the webhook and token code before going live.</li>
+  </ul>
+</section>
+
+<section class="col">
+  <div class="eyebrow">Needed from you</div>
+  <h2>Four answers and we start</h2>
+  <div class="tbl"><table style="min-width:0">
+    <thead><tr><th>Item</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><b>Public address:</b> a subdomain on a domain you have on Cloudflare (e.g. <code>dm.yourdomain.com</code>), or none</td><td>Meta needs a fixed HTTPS address. With a Cloudflare domain we use a Cloudflare Tunnel. Without one, Tailscale Funnel gives a free fixed address.</td></tr>
+      <tr><td><b>Friend's Instagram username</b>, and whether the account is already Business or Creator</td><td>To add him as a tester. The account must be public and professional.</td></tr>
+      <tr><td><b>Anthropic API key</b></td><td>Powers the hook coach and suggested replies. It's stored only in <code>.env</code> on the Mac.</td></tr>
+      <tr><td><b>Where the code lives</b> (e.g. <code>~/Desktop/Projects/dm-desk</code>) and whether to fork it to your GitHub</td><td>So it lasts and can be updated.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</div>

@@ -13,9 +13,13 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { tabFill, UseSuggestion } from "@/components/suggested-field";
+import { DEFAULT_FOLLOW_PROMPT, DEFAULT_FOLLOW_BUTTON, DEFAULT_PUBLIC_REPLIES } from "@/lib/templates/default-messages";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
+import { sfx } from "@/lib/handdrawn";
+import { CritterArt } from "@/components/handdrawn/critter-art";
 import { Plus, Warning, X } from "@phosphor-icons/react";
 import AccountSelect from "@/components/account-select";
 import PostPicker from "@/components/post-picker";
@@ -85,8 +89,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-card p-4 shadow-xs sm:p-5">
-      <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
+    <section className="hr2 space-y-4 border-[2.5px] border-ink bg-card p-4 sm:p-5">
+      <h2 className="font-display text-2xl leading-tight text-foreground">{title}</h2>
       {children}
     </section>
   );
@@ -500,8 +504,9 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
         }
         // refresh() busts the router cache so the list reflects the save
         // instead of landing on a stale (empty) campaigns page.
+        if (activeValue && (mode === "new" || !isActive)) sfx("yes"); // went live
         gooeyToast.success(
-          mode === "new" ? "Campaign created" : "Campaign saved"
+          mode === "new" ? "It's live" : "Saved"
         );
         router.push("/campaigns");
         router.refresh();
@@ -522,7 +527,7 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
         gooeyToast.error("Could not save campaign");
       }
     } catch {
-      setError("Failed to save campaign");
+      setError("Couldn't save. Try again.");
       gooeyToast.error("Failed to save campaign");
     } finally {
       setSaving(false);
@@ -591,15 +596,17 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
         </div>
       )}
 
-      <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card px-5 py-5 sm:px-7 sm:py-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            {mode === "new" ? "New automation" : "Campaign editor"}
+      <div className="hr1 flex flex-col gap-5 border-[2.5px] border-ink bg-card px-5 py-5 sm:px-7 sm:py-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <CritterArt area="campaigns" working pokeable className="size-16 shrink-0 sm:size-20" />
+          <div className="min-w-0">
+          <p className="text-xs font-semibold text-muted-foreground">
+            {mode === "new" ? "New automation" : "Edit automation"}
           </p>
           {mode === "edit" ? (
             <div className="mt-2 flex min-w-0 flex-wrap items-center gap-3">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {name || "Untitled campaign"}
+              <h1 className="truncate font-display text-4xl leading-none text-foreground">
+                {name || "Untitled"}
               </h1>
               <Badge variant={isActive ? "success" : "muted"}>
                 {isActive ? "LIVE" : "PAUSED"}
@@ -607,10 +614,11 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
             </div>
           ) : (
             <>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Build a campaign</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Choose what starts the conversation, then shape every reply that follows.</p>
+              <h1 className="mt-1 font-display text-4xl leading-none text-foreground">Make an automation</h1>
+              <p className="mt-2 text-sm text-muted-foreground">Pick what starts it, then write the DM.</p>
             </>
           )}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canManage && importQueue && (
@@ -640,15 +648,17 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
                 onClick={() => handleSubmit(true)}
                 disabled={saving}
               >
-                Go Live
+                Go live
               </Button>
             ))}
           {canManage && <Button
             type="button"
+            variant={mode === "new" ? "hero" : "default"}
+            className="clicky"
             onClick={() => handleSubmit(mode === "new" ? true : isActive)}
             disabled={saving}
           >
-            {saving ? "Saving…" : mode === "new" ? "Go Live" : "Save changes"}
+            {saving ? "Saving…" : mode === "new" ? "Go live" : "Save"}
           </Button>}
         </div>
       </div>
@@ -797,7 +807,8 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
                           ),
                         )
                       }
-                      placeholder="Sent you a DM! 📩"
+                      placeholder={DEFAULT_PUBLIC_REPLIES[i % DEFAULT_PUBLIC_REPLIES.length]}
+                      onKeyDown={tabFill(msg, (v) => setPublicReplyMessages((prev) => prev.map((m, idx) => (idx === i ? v : m))), DEFAULT_PUBLIC_REPLIES[i % DEFAULT_PUBLIC_REPLIES.length])}
                       maxLength={1000}
                     />
                     {publicReplyMessages.length > 1 && (
@@ -854,16 +865,20 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
                   <Textarea
                     value={openingDmMessage}
                     onChange={(e) => setOpeningDmMessage(e.target.value)}
-                    placeholder="Hey there! I'm so happy you're here 😊"
+                    placeholder={"Hey there! I'm so happy you're here 😊"}
+                    onKeyDown={tabFill(openingDmMessage, setOpeningDmMessage, "Hey there! I'm so happy you're here 😊")}
                     rows={3}
                     maxLength={1000}
                   />
+                  <UseSuggestion value={openingDmMessage} set={setOpeningDmMessage} suggestion={"Hey there! I'm so happy you're here 😊"} />
                   <Input
                     value={openingDmButtonLabel}
                     onChange={(e) => setOpeningDmButtonLabel(e.target.value)}
-                    placeholder="Send me the link"
+                    placeholder={"Send me the link"}
+                    onKeyDown={tabFill(openingDmButtonLabel, setOpeningDmButtonLabel, "Send me the link")}
                     maxLength={64}
                   />
+                  <UseSuggestion value={openingDmButtonLabel} set={setOpeningDmButtonLabel} suggestion={"Send me the link"} />
                 </div>
               )}
             </div>
@@ -882,16 +897,20 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
                   <Textarea
                     value={followPromptMessage}
                     onChange={(e) => setFollowPromptMessage(e.target.value)}
-                    placeholder="quick favor before i send your link. i don't make any money from this, it's free. if you want to support me, just don't unfollow after, and star the repo on github if it helps you. tap the button once you're following and i'll send it over"
+                    placeholder={DEFAULT_FOLLOW_PROMPT}
+                    onKeyDown={tabFill(followPromptMessage, setFollowPromptMessage, DEFAULT_FOLLOW_PROMPT)}
                     rows={3}
                     maxLength={1000}
                   />
+                  <UseSuggestion value={followPromptMessage} set={setFollowPromptMessage} suggestion={DEFAULT_FOLLOW_PROMPT} />
                   <Input
                     value={followPromptButtonLabel}
                     onChange={(e) => setFollowPromptButtonLabel(e.target.value)}
-                    placeholder="i'm following"
+                    placeholder={DEFAULT_FOLLOW_BUTTON}
+                    onKeyDown={tabFill(followPromptButtonLabel, setFollowPromptButtonLabel, DEFAULT_FOLLOW_BUTTON)}
                     maxLength={20}
                   />
+                  <UseSuggestion value={followPromptButtonLabel} set={setFollowPromptButtonLabel} suggestion={DEFAULT_FOLLOW_BUTTON} />
                   <p className="text-xs text-muted-foreground">
                     We send the link only after they tap the button and
                     Instagram confirms the follow. If it can&apos;t be verified,
@@ -987,10 +1006,12 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
                   <Textarea
                     value={followUpMessage}
                     onChange={(e) => setFollowUpMessage(e.target.value)}
-                    placeholder="Btw just wanted to say thanks for following me, I appreciate the support 🙌"
+                    placeholder={"Btw just wanted to say thanks for following me, I appreciate the support 🙌"}
+                    onKeyDown={tabFill(followUpMessage, setFollowUpMessage, "Btw just wanted to say thanks for following me, I appreciate the support 🙌")}
                     rows={3}
                     maxLength={1000}
                   />
+                  <UseSuggestion value={followUpMessage} set={setFollowUpMessage} suggestion={"Btw just wanted to say thanks for following me, I appreciate the support 🙌"} />
                   <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
                     <span className="text-xs text-muted-foreground">
                       Send it
@@ -1030,11 +1051,11 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
           </Section>
         </fieldset>
 
-        <aside className="rounded-2xl border border-border bg-card p-4 shadow-xs sm:p-5 xl:sticky xl:top-6 xl:self-start">
+        <aside className="hr3 border-[2.5px] border-ink bg-card p-4 sm:p-5 xl:sticky xl:top-6 xl:self-start">
           <div className="mb-5 flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Live preview</p>
-              <p className="mt-1 text-sm text-muted-foreground">See the message flow as you build it.</p>
+              <p className="font-display text-2xl leading-tight">Preview</p>
+              <p className="mt-1 text-sm text-muted-foreground">What people will see.</p>
             </div>
             <Badge variant="outline">@{username}</Badge>
           </div>
@@ -1050,7 +1071,7 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
               dmTriggerEnabled={dmTriggerEnabled}
               publicReplyEnabled={publicReplyEnabled}
               publicReplyMessage={
-                publicReplyMessages.find((m) => m.trim()) ?? ""
+                publicReplyMessages.find((m) => m.trim()) ?? DEFAULT_PUBLIC_REPLIES[0]
               }
               openingDmEnabled={openingDmEnabled}
               openingDmMessage={openingDmMessage}

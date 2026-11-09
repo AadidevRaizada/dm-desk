@@ -14,7 +14,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
+import { sfx } from "@/lib/handdrawn";
+import { HdEmpty, HdPageHead } from "@/components/handdrawn/hd-bits";
 import {
   ArrowRight,
   ArrowSquareOut,
@@ -240,12 +242,13 @@ export default function CampaignsList({
         delete next[id];
         return next;
       });
-      gooeyToast.error("Could not update campaign");
+      gooeyToast.error("Couldn't switch it. Try again.");
     },
     onSuccess: (_data, { id, isActive }) => {
       const campaign = automations.find((a) => a.id === id);
       const name = campaign?.name ?? "Campaign";
-      gooeyToast.success(isActive ? `${name} paused` : `${name} activated`);
+      if (!isActive) sfx("yes"); // went live
+      gooeyToast.success(isActive ? `${name} paused` : `${name} is live`);
     },
   });
 
@@ -413,24 +416,24 @@ export default function CampaignsList({
       value: activeCount.toLocaleString(),
       label: "Live now",
       sub: `${counts.paused} paused`,
-      tint: "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400",
+      tint: "bg-parrot",
     },
     {
       icon: <ChatCircle weight="fill" className="size-4" />,
       value: sentCount.toLocaleString(),
-      label: "DMs delivered",
-      sub: "across all campaigns",
-      tint: "bg-sky-500/12 text-sky-600 dark:text-sky-400",
+      label: "DMs sent",
+      sub: "all automations",
+      tint: "bg-elephant",
     },
     {
       icon: <LinkSimple weight="bold" className="size-4" />,
       value: clickCount.toLocaleString(),
-      label: "Tracked clicks",
+      label: "Link clicks",
       sub:
         sentCount > 0
           ? `${((clickCount / Math.max(sentCount, 1)) * 100).toFixed(1)}% avg CTR`
-          : "no sends yet",
-      tint: "bg-violet-500/12 text-violet-600 dark:text-violet-400",
+          : "none sent yet",
+      tint: "bg-owl",
     },
   ];
 
@@ -447,25 +450,29 @@ export default function CampaignsList({
   return (
     <div className="space-y-5">
       {/* ── Header ─────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <section className="hr1 overflow-hidden border-[2.5px] border-ink bg-card">
         <div className="flex flex-col gap-5 px-5 pb-5 pt-6 sm:px-7 sm:pt-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 max-w-2xl">
-              <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-foreground sm:text-[28px] sm:leading-9">
-                Campaigns
-              </h1>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Turn any comment into a DM conversation — keywords in, links
-                out.
-              </p>
-            </div>
+            <HdPageHead
+              area="campaigns"
+              title="Automations"
+              line="Someone comments a word, they get your DM."
+              className="min-w-0 max-w-2xl"
+            />
             <div className="flex flex-wrap items-center gap-2">
               {canManage && (
                 <Link
+                  href="/inbox-automations"
+                  className={cn(buttonVariants({ variant: "outline" }))}
+                >
+                  <ChatCircle weight="bold" className="size-4" />
+                  DM replies
+                </Link>
+              )}
+              {canManage && (
+                <Link
                   href="/campaigns/import"
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                  )}
+                  className={cn(buttonVariants({ variant: "outline" }))}
                 >
                   <UploadSimple weight="bold" className="size-4" />
                   Import
@@ -475,12 +482,12 @@ export default function CampaignsList({
                 <Link
                   href="/campaigns/new"
                   className={cn(
-                    buttonVariants({ variant: "default", size: "sm" }),
-                    "shadow-sm",
+                    buttonVariants({ variant: "hero" }),
+                    "clicky",
                   )}
                 >
                   <Plus weight="bold" className="size-4" />
-                  New campaign
+                  New automation
                 </Link>
               )}
             </div>
@@ -491,11 +498,11 @@ export default function CampaignsList({
               {kpis.map((kpi) => (
                 <div
                   key={kpi.label}
-                  className="flex items-center gap-3 rounded-xl border border-border/70 bg-muted/40 px-4 py-3"
+                  className="hr2 flex items-center gap-3 border-2 border-ink bg-paper px-4 py-3"
                 >
                   <span
                     className={cn(
-                      "grid size-9 shrink-0 place-items-center rounded-lg",
+                      "grid size-9 shrink-0 place-items-center rounded-full border-2 border-ink text-ink",
                       kpi.tint,
                     )}
                   >
@@ -506,7 +513,7 @@ export default function CampaignsList({
                       {kpi.label} ·{" "}
                       <span className="tabular-nums">{kpi.sub}</span>
                     </dt>
-                    <dd className="order-1 text-xl font-semibold tabular-nums tracking-tight text-foreground">
+                    <dd className="order-1 font-display text-3xl leading-none tabular-nums text-foreground">
                       {kpi.value}
                     </dd>
                   </div>
@@ -521,7 +528,7 @@ export default function CampaignsList({
       {automations.length > 0 && (
         <section
           aria-label="Filter and sort campaigns"
-          className="space-y-3 rounded-2xl border border-border bg-card p-3 sm:p-3.5"
+          className="hr3 space-y-3 border-[2.5px] border-ink bg-card p-3 sm:p-3.5"
         >
           <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
             <div className="relative flex-1">
@@ -564,7 +571,7 @@ export default function CampaignsList({
                   id="campaign-sort"
                   value={sortKey}
                   onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  className="h-9 appearance-none rounded-lg border border-border bg-background pl-8 pr-8 text-sm font-medium text-foreground shadow-xs outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring"
+                  className="h-9 appearance-none rounded-lg border border-border bg-background pl-8 pr-8 text-sm font-medium text-foreground outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -607,7 +614,7 @@ export default function CampaignsList({
                     className={cn(
                       "grid size-8 place-items-center rounded-md transition-all",
                       view === opt.value
-                        ? "bg-background text-foreground shadow-xs ring-1 ring-border"
+                        ? "bg-background text-foreground ring-1 ring-border"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
@@ -635,7 +642,7 @@ export default function CampaignsList({
                     className={cn(
                       "inline-flex h-7.5 items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-all",
                       isActive
-                        ? "bg-foreground text-background shadow-xs"
+                        ? "bg-foreground text-background"
                         : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
@@ -643,7 +650,7 @@ export default function CampaignsList({
                       <span
                         className={cn(
                           "size-1.5 rounded-full",
-                          isActive ? "bg-emerald-400" : "bg-emerald-500",
+                          isActive ? "bg-ok" : "bg-ok",
                         )}
                       />
                     )}
@@ -651,7 +658,7 @@ export default function CampaignsList({
                       <span
                         className={cn(
                           "size-1.5 rounded-full",
-                          isActive ? "bg-zinc-400" : "bg-zinc-400",
+                          isActive ? "bg-hd-muted" : "bg-hd-muted",
                         )}
                       />
                     )}
@@ -697,52 +704,39 @@ export default function CampaignsList({
 
       {/* ── Empty states ───────────────────────────────────── */}
       {automations.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center sm:py-16">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <ChatCircle weight="fill" className="size-6" />
-          </span>
-          <h3 className="mt-4 text-lg font-semibold tracking-tight">
-            No campaigns yet
-          </h3>
-          <p className="mx-auto mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">
-            Pick a post or reel, choose the comments that trigger it, and let
-            the DM flow do the follow-up automatically.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            <Button render={<Link href="/campaigns/new" />} className="gap-1.5">
-              <Plus weight="bold" className="size-4" />
-              Create campaign
-            </Button>
-            {canManage && (
-              <Link
-                href="/campaigns/import"
-                className={cn(buttonVariants({ variant: "outline" }))}
+        <HdEmpty
+          area="campaigns"
+          title="No automations yet"
+          line="Pick a reel, pick a word, write the DM. The beaver does the rest."
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="hero"
+                render={<Link href="/campaigns/new" />}
+                className="clicky gap-1.5"
               >
-                Import existing
-              </Link>
-            )}
-          </div>
-          <div className="mx-auto mt-8 flex max-w-md items-center justify-center gap-2 text-xs text-muted-foreground">
-            {["Pick a reel", "Set keywords", "Send the DM"].map((step, i) => (
-              <span key={step} className="flex items-center gap-2">
-                {i > 0 && (
-                  <CaretRight weight="bold" className="size-3 opacity-50" />
-                )}
-                <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
-                  {i + 1}. {step}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
+                <Plus weight="bold" className="size-4" />
+                Make one
+              </Button>
+              {canManage && (
+                <Link
+                  href="/campaigns/import"
+                  className={cn(buttonVariants({ variant: "outline" }))}
+                >
+                  Import
+                </Link>
+              )}
+            </div>
+          }
+        />
       )}
 
       {automations.length > 0 && filtered.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+        <div className="hr3 border-2 border-dashed border-ink/60 bg-paper2 px-6 py-12 text-center">
           <span className="mx-auto grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
             <MagnifyingGlass weight="bold" className="size-5" />
           </span>
-          <h3 className="mt-3 font-semibold">No matches</h3>
+          <h3 className="mt-3 font-display text-2xl">No matches</h3>
           <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
             Nothing matches {query ? `“${search.trim()}”` : "these filters"}.
             Try a different keyword or clear the filters.
@@ -848,7 +842,7 @@ export default function CampaignsList({
           onClick={() => setConfirmDeleteId(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <span className="grid size-10 place-items-center rounded-xl bg-destructive/10 text-destructive">
@@ -933,7 +927,7 @@ export default function CampaignsList({
               autoPlay
               loop
               playsInline
-              className="max-h-[76vh] w-full rounded-2xl border border-white/10 bg-black object-contain shadow-2xl"
+              className="max-h-[76vh] w-full rounded-2xl border border-white/10 bg-black object-contain"
             />
           </div>
         </div>
@@ -966,25 +960,21 @@ function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full font-medium",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border-[1.6px] border-current font-semibold",
         size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
         active
-          ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400"
+          ? "bg-ok/12 text-ok"
           : "bg-muted text-muted-foreground",
       )}
     >
       <span className="relative flex size-1.5">
-        {active && (
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+        {active ? (
+          <span className="live size-1.5!" />
+        ) : (
+          <span className="relative inline-flex size-1.5 rounded-full bg-hd-muted" />
         )}
-        <span
-          className={cn(
-            "relative inline-flex size-1.5 rounded-full",
-            active ? "bg-emerald-500" : "bg-zinc-400",
-          )}
-        />
       </span>
-      {active ? "Active" : "Paused"}
+      {active ? "Live" : "Paused"}
     </span>
   );
 }
@@ -1091,7 +1081,7 @@ function ActionsCluster({
           className={cn(
             "grid size-8 place-items-center rounded-lg border transition-all",
             copied
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              ? "border-ok/30 bg-ok/10 text-ok"
               : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
           )}
         >
@@ -1190,7 +1180,7 @@ function MediaThumb({
             aria-label={`Play reel preview for ${auto.name}`}
             className="absolute inset-0 grid place-items-center bg-black/25 opacity-100 transition-opacity hover:bg-black/40"
           >
-            <span className="grid size-9 place-items-center rounded-full bg-white/95 text-black shadow-lg transition-transform hover:scale-105">
+            <span className="grid size-9 place-items-center rounded-full bg-white/95 text-black transition-transform hover:scale-105">
               <Play weight="fill" className="ml-0.5 size-4" />
             </span>
           </button>
@@ -1209,7 +1199,7 @@ function MediaThumb({
         <span
           className={cn(
             "absolute left-2 top-2 size-2 rounded-full ring-2 ring-white/90",
-            auto.isActive ? "bg-emerald-500" : "bg-zinc-400",
+            auto.isActive ? "bg-ok" : "bg-hd-muted",
           )}
         />
       </div>
@@ -1224,7 +1214,7 @@ function MediaThumb({
   return (
     <div
       className={cn(
-        "relative grid shrink-0 place-items-center overflow-hidden bg-linear-to-br from-muted via-muted/70 to-muted",
+        "relative grid shrink-0 place-items-center overflow-hidden bg-muted",
         size === "row"
           ? "size-20 rounded-xl sm:size-24"
           : "aspect-square w-full",
@@ -1243,7 +1233,7 @@ function MediaThumb({
       <span
         className={cn(
           "absolute left-2 top-2 size-2 rounded-full ring-2 ring-white/90",
-          auto.isActive ? "bg-emerald-500" : "bg-zinc-400",
+          auto.isActive ? "bg-ok" : "bg-hd-muted",
         )}
       />
     </div>
@@ -1368,9 +1358,9 @@ function CampaignRow({
                   className={cn(
                     "block h-full rounded-full",
                     ctr >= 10
-                      ? "bg-emerald-500"
+                      ? "bg-ok"
                       : ctr > 0
-                        ? "bg-sky-500"
+                        ? "bg-elephant"
                         : "bg-muted-foreground/30",
                   )}
                   style={{ width: `${Math.min(ctr, 100)}%` }}

@@ -23,7 +23,7 @@ import {
   ChatCircle,
   Eye,
   Heart,
-  InstagramLogo,
+  MagnetStraight,
   ShareNetwork,
   Users,
   WarningCircle,
@@ -37,7 +37,6 @@ import OverviewRefresh from "@/components/overview-refresh";
 import StatCard from "@/components/stat-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getWorkspaceInstagramAccount } from "@/lib/instagram-accounts";
@@ -48,6 +47,7 @@ import {
 } from "@/lib/server/overview";
 import { formatTimeAgo } from "@/lib/utils/time";
 import { canManageInstagramAccounts, getCurrentWorkspaceContext } from "@/lib/workspace-access";
+import { HdEmpty, HdPageHead } from "@/components/handdrawn/hd-bits";
 
 // Allow time for paginated media + per-post insight calls on larger accounts.
 export const maxDuration = 60;
@@ -67,7 +67,7 @@ function OverviewSkeleton() {
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 shadow-xs sm:p-5"
+            className="hr2 border-[2.5px] border-ink bg-card p-4 sm:p-5"
           >
             <Skeleton className="h-4 w-16" />
             <Skeleton className="mt-3 h-6 w-20" />
@@ -75,12 +75,12 @@ function OverviewSkeleton() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 shadow-xs sm:p-6">
+      <div className="hr1 border-[2.5px] border-ink bg-card p-5 sm:p-6">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="mt-4 h-52 w-full" />
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 shadow-xs sm:p-6">
+      <div className="hr1 border-[2.5px] border-ink bg-card p-5 sm:p-6">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="mt-4 h-48 w-full" />
       </div>
@@ -125,25 +125,21 @@ async function OverviewContent({
 
   if (!account) {
     return (
-      <Card className="py-14">
-        <CardContent className="items-center gap-2 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <InstagramLogo className="size-5" />
-          </span>
-          <p className="text-sm font-medium text-foreground">
-            No Instagram account connected
-          </p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Connect an account to see reach, engagement and follower trends
-            across your posts.
-          </p>
-          {canManageInstagramAccounts(context) && (
-            <Link href="/api/instagram/connect" className={cn(buttonVariants({ variant: "default", size: "sm" }), "mt-2")}>
+      <HdEmpty
+        area="stats"
+        title="No Instagram account yet"
+        line="Connect your account and the owl will start counting views, likes and followers."
+        action={
+          canManageInstagramAccounts(context) ? (
+            <Link
+              href="/api/instagram/connect"
+              className={cn(buttonVariants({ variant: "default" }))}
+            >
               Connect Instagram
             </Link>
-          )}
-        </CardContent>
-      </Card>
+          ) : null
+        }
+      />
     );
   }
 
@@ -197,29 +193,36 @@ function OverviewView({
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Overview
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {data.requestedCount === "all" ? "All-time" : "Recent"} performance
-            for @{data.account.username}
-            {data.truncated ? ` (capped at ${totals.posts} posts)` : ""}
-          </p>
+          <HdPageHead
+            area="stats"
+            title="Stats"
+            line={
+              <>
+                {data.requestedCount === "all" ? "All your posts" : "Your recent posts"}{" "}
+                on @{data.account.username}
+                {data.truncated ? ` (first ${totals.posts})` : ""}
+              </>
+            }
+          />
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {followers !== null && (
               // Kept out of the tile row below: that row sums the selected
               // posts, whereas this is a current account-level total.
-              <span className="inline-flex items-center gap-1.5">
-                <Users weight="fill" className="size-3.5 text-primary" />
+              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                <Users weight="fill" className="size-3.5" />
                 {followers.toLocaleString()} followers
               </span>
             )}
-            <span className="text-muted-foreground/70">
-              Last refreshed {formatTimeAgo(fetchedAt)}
-            </span>
+            <span>Updated {formatTimeAgo(fetchedAt)}</span>
           </div>
         </div>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+          <Link
+            href="/coach"
+            className={cn(buttonVariants({ variant: "default" }), "h-9")}
+          >
+            <MagnetStraight weight="bold" /> Coach
+          </Link>
           <OverviewRefresh
             selectedAccountId={selectedAccountId}
             count={data.requestedCount}
@@ -232,13 +235,12 @@ function OverviewView({
       </div>
 
       {!insightsAvailable && (
-        <Alert className="border-warning/30 bg-warning/5">
+        <Alert>
           <WarningCircle weight="fill" className="text-warning" />
-          <AlertTitle>Insights permission missing</AlertTitle>
+          <AlertTitle>Some numbers are hidden</AlertTitle>
           <AlertDescription>
-            Views, reach, saved and shares need the insights permission.
-            Reconnect your account to grant it — likes and comments are shown in
-            the meantime.
+            Views, reach, saved and shares need one more permission. Reconnect
+            to allow it. Likes and comments still show.
           </AlertDescription>
           <Link
             href="/api/instagram/connect"

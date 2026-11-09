@@ -1,0 +1,139 @@
+/* Ahum hand-drawn kit: tokens, surfaces, motion. From Auto Ahum (~/ahum-ops/ui/index.html).
+   Copied into DM Desk from the ahum-handdrawn skill. Local changes:
+   - --accent / --muted renamed to --hd-accent / --hd-muted (shadcn already uses those names).
+   - dark tokens also follow next-themes' html.dark / html.light classes.
+   Fonts (Gochi Hand + Shantell Sans) load through next/font in lib/fonts.ts; --display/--body are
+   pointed at them in app/globals.css. */
+
+/* ---------- tokens (light, then dark twice: system and forced) ---------- */
+:root {
+  --paper: #F5F3EC; --paper2: #FFFDF7; --ink: #1F1D1A; --hd-muted: #6E695F; --wash: #E9E4D8; --grid: #D9D3C4;
+  --hd-accent: #D8432C; --ok: #2E8A57; --warn: #C2860F; --sky: #CFE5F0; --beam: #F7D774;
+  --fox: #F2B07A; --parrot: #96D2AA; --otter: #CBA780; --beaver: #BC8E66; --dog: #F0D18F; --raccoon: #B3B2BB;
+  --owl: #BBA6DC; --elephant: #AEC6D8; --beak: #EE9A3F; --mask: #3A3733; --hat: #F2C84B; --wood: #D9B98C; --couch: #9DB7C9; --leaf: #7FB77E;
+  --logo-red: #E8262B; --logo-purple: #8B3FD9; --logo-blue: #3D5AF1;
+  --display: "Gochi Hand", "Comic Sans MS", "Chalkboard SE", cursive;
+  --body: "Shantell Sans", "Comic Sans MS", "Chalkboard SE", system-ui, sans-serif;
+  --spring: cubic-bezier(.3, 1.6, .5, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]):not(.light) {
+  --paper: #15171D; --paper2: #1D2028; --ink: #ECE7DC; --hd-muted: #9E988C; --wash: #262A35; --grid: #2A2E39;
+  --hd-accent: #F2684F; --ok: #5DC08B; --warn: #E2AE47; --sky: #24334E; --beam: #C9A946;
+  --fox: #B97A4A; --parrot: #4E9A6E; --otter: #8C6D51; --beaver: #7D5B40; --dog: #A88E4F; --raccoon: #6E6D77;
+  --owl: #7A68A0; --elephant: #5D7C92; --beak: #CF7A27; --mask: #0D0E11; --hat: #B8922C; --wood: #7B6446; --couch: #4C6475; --leaf: #4E8350;
+  color-scheme: dark } }
+:root[data-theme="dark"], :root.dark {
+  --paper: #15171D; --paper2: #1D2028; --ink: #ECE7DC; --hd-muted: #9E988C; --wash: #262A35; --grid: #2A2E39;
+  --hd-accent: #F2684F; --ok: #5DC08B; --warn: #E2AE47; --sky: #24334E; --beam: #C9A946;
+  --fox: #B97A4A; --parrot: #4E9A6E; --otter: #8C6D51; --beaver: #7D5B40; --dog: #A88E4F; --raccoon: #6E6D77;
+  --owl: #7A68A0; --elephant: #5D7C92; --beak: #CF7A27; --mask: #0D0E11; --hat: #B8922C; --wood: #7B6446; --couch: #4C6475; --leaf: #4E8350;
+  color-scheme: dark }
+
+/* ---------- page and surfaces ---------- */
+.hd-page {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; margin: 0;
+  background-image: radial-gradient(var(--grid) 1.2px, transparent 1.2px); background-size: 22px 22px;
+}
+.hd-page h1, .hd-page h2, .hd-page h3, .hd-display { font-family: var(--display); font-weight: 400; line-height: 1.05; text-wrap: balance; }
+.hd-page :focus-visible { outline: 3px dashed var(--hd-accent); outline-offset: 3px; }
+.hd-page button { font: inherit; color: inherit; }
+/* wobbly hand-drawn borders: mix the three so neighbours never match */
+.hr1 { border-radius: 255px 16px 225px 16px / 16px 225px 16px 255px; }
+.hr2 { border-radius: 16px 225px 16px 255px / 255px 16px 225px 16px; }
+.hr3 { border-radius: 225px 18px 255px 14px / 14px 255px 18px 225px; }
+.hd-card { border: 2.5px solid var(--ink); background: var(--paper2); padding: 14px 16px; min-width: 0; }
+.hd-tile { border: 2.5px solid var(--ink); background: var(--paper); padding: 10px 14px 14px; cursor: pointer; text-align: left; transition: transform .18s var(--spring); }
+.hd-tile:hover { transform: rotate(-.7deg) translateY(-3px); }
+.hd-tile:nth-child(even):hover { transform: rotate(.7deg) translateY(-3px); }
+.hd-btn { border: 2.5px solid var(--ink); background: var(--paper2); padding: 4px 16px; cursor: pointer; font-family: var(--display); font-size: 20px; }
+.hd-btn.primary { background: var(--hd-accent); color: var(--paper2); }
+.hd-pill { font-size: 12px; border: 1.8px solid currentColor; border-radius: 999px; padding: 0 9px; white-space: nowrap; }
+.hd-stamp { display: inline-block; font-family: var(--display); font-size: 30px; color: var(--hd-accent); border: 3px solid currentColor; padding: 0 10px; rotate: -12deg; animation: stamp .3s cubic-bezier(.3, 1.8, .5, 1); }
+
+/* ---------- SVG drawing classes (critters, props, scenes) ---------- */
+.ln { stroke: var(--ink); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.thin { stroke-width: 1.6; } .nf { fill: none; } .f { fill: var(--c); }
+.muz { fill: var(--paper2); } .pap { fill: var(--paper); } .washf { fill: var(--wash); } .skyf { fill: var(--sky); }
+.dot { fill: var(--ink); } .dotl { fill: var(--paper2); } .lt { stroke: var(--paper2); }
+.beak { fill: var(--beak); } .mask { fill: var(--mask); } .hat { fill: var(--hat); } .capf, .acc { fill: var(--hd-accent); }
+.wood { fill: var(--wood); } .couch { fill: var(--couch); } .leaf { fill: var(--leaf); } .logo-red { fill: var(--logo-red); }
+.svgt { font-family: var(--display); fill: var(--ink); font-size: 20px; }
+.svgs { font-family: var(--body); fill: var(--ink); font-size: 12px; }
+
+/* App chrome (fixed tab bar, sticky top bar): own compositor layer, opaque,
+   painted in isolation, so iOS Safari keeps drawing them during a fast fling.
+   Never put .sk / filters / transforms on these or on their ancestors. */
+.hd-chrome {
+  background-color: var(--paper);
+  transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;
+  contain: layout paint; isolation: isolate;
+}
+/* backdrop-filter on many scrolling tiles (post grid badges) starves Safari's
+   compositor on phones; the badges already have a near-opaque background. */
+@media (max-width: 767px) {
+  [data-slot="sidebar-inset"] [class*="backdrop-blur"] { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+
+/* boil: lines redraw themselves (filter cycled by handdrawn.js) */
+html[data-boil="0"] .sk { filter: url(#rough0); }
+html[data-boil="1"] .sk { filter: url(#rough1); }
+html[data-boil="2"] .sk { filter: url(#rough2); }
+
+/* ---------- ambient life (loops, slow, small) ---------- */
+.blink { transform-box: fill-box; transform-origin: center; animation: blink 5.5s infinite; }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+.breathe { transform-box: fill-box; transform-origin: bottom center; animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.03, .97); } }
+.bobwork { animation: work .5s ease-in-out infinite alternate; }
+@keyframes work { to { transform: translateY(2px); } }
+.bob { transform-box: fill-box; transform-origin: center; animation: bob 1.4s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+.peek { animation: peek 5s ease-in-out infinite; }
+@keyframes peek { 0%, 45% { transform: translateY(0); } 58%, 82% { transform: translateY(58px); } 100% { transform: translateY(0); } }
+.zzz { font-family: var(--display); fill: var(--hd-muted); font-size: 22px; animation: zz 3s ease-in-out infinite; }
+@keyframes zz { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(18px, -40px); opacity: 0; } }
+.particle { font-family: var(--body); font-weight: 700; font-size: 13px; fill: var(--hd-accent); animation: rise 2.4s ease-out infinite; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-46px); opacity: 0; } }
+.pulse { transform-box: fill-box; transform-origin: center; animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.6); opacity: .55; } }
+.live { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); display: inline-block; animation: live 1.6s ease-in-out infinite; }
+@keyframes live { 50% { opacity: .35; } }
+.flow { stroke-dasharray: 4 6; animation: flow 1.2s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -20; } }
+.tick { stroke-dasharray: 22; animation: tick 6s ease-in-out infinite; }
+@keyframes tick { 0%, 78% { stroke-dashoffset: 0; } 84% { stroke-dashoffset: 22; } 100% { stroke-dashoffset: 0; } }
+.scrib { stroke-dasharray: 120; animation: scrib 5s ease-in-out infinite; }
+@keyframes scrib { 0%, 70% { stroke-dashoffset: 0; } 80% { stroke-dashoffset: 120; } 100% { stroke-dashoffset: 0; } }
+.twinkle { transform-box: fill-box; transform-origin: center; animation: twinkle 2.2s ease-in-out infinite; }
+@keyframes twinkle { 50% { transform: scale(.4); } }
+.sway { transform-box: fill-box; transform-origin: bottom center; animation: sway 2.6s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+
+/* ---------- hover lift for drawn things you can click ---------- */
+.hd-hit { cursor: pointer; }
+.hd-hit:focus:not(:focus-visible) { outline: none; }
+.hd-hit > g { transition: translate .2s var(--spring); }
+/* translate/scale (not transform) so they stack on the SVG transform="translate(x,y)" placing the critter */
+.hd-hit:hover > g, .hd-hit:focus-visible > g { translate: 0 -6px; }
+
+/* ---------- moments (one-shot, on events) ---------- */
+.enter > * { animation: zoomIn .42s cubic-bezier(.2, .9, .3, 1.25); }
+@keyframes zoomIn { from { transform: scale(.94) rotate(-.4deg); } to { transform: none; } }
+.slide-in { animation: slideIn .35s ease; }
+@keyframes slideIn { from { transform: translateX(10px); } to { transform: none; } }
+.sheet-in { animation: sheet .32s cubic-bezier(.2, .9, .3, 1.15); }
+@keyframes sheet { from { transform: translateX(40px); } to { transform: none; } }
+.clicky:active { transform: scale(.96) !important; }
+.boing { transform-box: fill-box; transform-origin: center bottom; animation: boing .45s cubic-bezier(.3, 1.8, .5, 1); }
+@keyframes boing { 0% { scale: .92 1.06; } 40% { scale: 1.04 .96; } 100% { scale: 1; } }
+@keyframes stamp { from { transform: scale(2.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.gone { animation: gone .35s ease-in forwards; }
+@keyframes gone { to { transform: translateX(110%) rotate(6deg); } }
+.hd-burst { position: fixed; pointer-events: none; z-index: 60; width: 70px; height: 70px; animation: burst .5s ease-out forwards; }
+.hd-burst path { stroke: var(--hd-accent); stroke-width: 3; stroke-linecap: round; fill: none; }
+@keyframes burst { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.25); opacity: 0; } }
+
+/* the page must be complete at rest: every animation above is decoration only */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

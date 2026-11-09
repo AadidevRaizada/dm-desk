@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth, signIn } from "@/lib/auth";
+import { ensureWorkspaceForUser } from "@/lib/workspace";
 import { prisma } from "@/lib/db/client";
 import { getBaseUrl } from "@/lib/env";
 import { canConnectInstagramAccount } from "@/lib/instagram-accounts";
-import { getLongLivedToken, getUserInfo, subscribeInstagramAccountToWebhooks } from "@/lib/meta/client";import { encryptToken,
+import { getLongLivedToken, getUserInfo, subscribeInstagramAccountToWebhooks } from "@/lib/meta/client";
+import {
+  createLoginHandoffToken,
+  encryptToken,
   exchangeCodeForToken,
   verifyOAuthState,
 } from "@/lib/meta/oauth";
@@ -17,28 +21,29 @@ export async function GET(request: NextRequest) {
   const state = verifyOAuthState(request.nextUrl.searchParams.get("state"));
   const baseUrl = getBaseUrl();
 
-  if (error) {
-    return NextResponse.redirect(`${baseUrl}/settings?instagram=denied`);
+  if (error || !code || !state) {
+    const dest = state?.mode === "login" ? "/login?error=" + encodeURIComponent(error ? "Instagram sign-in was cancelled." : "Sign-in link expired. Try again.") : `/settings?instagram=${error ? "denied" : "invalid"}`;
+    return NextResponse.redirect(`${baseUrl}${dest}`);
   }
 
-  if (!code || !state) {
-    return NextResponse.redirect(`${baseUrl}/settings?instagram=invalid`);
-  }
+  const isLogin = state.mode === "login";
+  const failUrl = (q: string) =>
+    isLogin ? `${baseUrl}/login?error=${encodeURIComponent(q)}` : `${baseUrl}/settings?instagram=${q}`;
 
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.redirect(`${baseUrl}/login`);
-  }
+  let workspaceId = state.workspaceId;
+  let loginUserId: string | null = null;
 
-  const membership = await prisma.workspaceMember.findFirst({
-    where: {
-      workspaceId: state.workspaceId,
-      userId: session.user.id,
-    },
-  });
-
-  if (!membership || !canManageInstagramAccounts(membership)) {
-    return NextResponse.redirect(`${baseUrl}/settings?instagram=forbidden`);
+  if (!isLogin) {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.redirect(`${baseUrl}/login`);
+    }
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { workspaceId, userId: session.user.id },
+    });
+    if (!membership || !canManageInstagramAccounts(membership)) {
+      return NextResponse.redirect(`${baseUrl}/settings?instagram=forbidden`);
+    }
   }
 
   try {
@@ -55,8 +60,28 @@ export async function GET(request: NextRequest) {
     // can be matched back to this account. Fall back to id if user_id is
     // ever absent.
     const instagramId = userInfo.user_id ?? userInfo.id;
+
+    if (isLogin) {
+      const allowed = (process.env.ALLOWED_INSTAGRAM_USERNAMES ?? "")
+        .split(",").map((u) => u.trim().toLowerCase()).filter(Boolean);
+      if (allowed.length > 0 && !allowed.includes(userInfo.username.toLowerCase())) {
+        return NextResponse.redirect(failUrl("This Instagram account isn't allowed on this DM Desk."));
+      }
+      const existing = await prisma.instagramAccount.findUnique({
+        where: { instagramId },
+        select: { workspace: { select: { id: true, ownerId: true } } },
+      });
+      if (existing) {
+        workspaceId = existing.workspace.id;
+        loginUserId = existing.workspace.ownerId;
+      } else {
+        const user = await prisma.user.create({ data: { name: userInfo.username } });
+        workspaceId = (await ensureWorkspaceForUser(user.id)).id;
+        loginUserId = user.id;
+      }
+    }
     const connection = await canConnectInstagramAccount({
-      workspaceId: state.workspaceId,
+      workspaceId: workspaceId,
       instagramId,
     });
 
@@ -86,7 +111,7 @@ export async function GET(request: NextRequest) {
     await prisma.instagramAccount.upsert({
       where: { instagramId },
       create: {
-        workspaceId: state.workspaceId,
+        workspaceId: workspaceId,
         instagramId,
         username: userInfo.username,
         name: userInfo.name,
@@ -95,7 +120,7 @@ export async function GET(request: NextRequest) {
         webhookSubscribed,
       },
       update: {
-        workspaceId: state.workspaceId,
+        workspaceId: workspaceId,
         username: userInfo.username,
         name: userInfo.name,
         accessToken: encryptedToken,
@@ -106,10 +131,12 @@ export async function GET(request: NextRequest) {
 
     // New/updated account — drop the dashboard's cached stats so the account
     // list and counts refresh on the landing redirect.
-    invalidateWorkspaceStats(state.workspaceId);
-    invalidateSettingsCache(state.workspaceId);
+    invalidateWorkspaceStats(workspaceId);
+    invalidateSettingsCache(workspaceId);
 
-    return NextResponse.redirect(`${baseUrl}/dashboard?connected=true`);
+    if (!isLogin) {
+      return NextResponse.redirect(`${baseUrl}/dashboard?connected=true`);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[Instagram Callback] Error:", err);
@@ -121,7 +148,7 @@ export async function GET(request: NextRequest) {
         data: {
           source: "SYSTEM",
           level: "ERROR",
-          workspaceId: state.workspaceId,
+          workspaceId: workspaceId,
           message: "Instagram connection failed",
           payload: { reason: message },
         },
@@ -129,9 +156,17 @@ export async function GET(request: NextRequest) {
       .catch(() => {});
 
     return NextResponse.redirect(
-      `${baseUrl}/settings?instagram=failed&reason=${encodeURIComponent(
-        message.slice(0, 200)
-      )}`
+      isLogin
+        ? failUrl(`Instagram sign-in failed: ${message.slice(0, 200)}`)
+        : `${baseUrl}/settings?instagram=failed&reason=${encodeURIComponent(message.slice(0, 200))}`
     );
   }
+
+  // Login mode: start the NextAuth session. signIn() throws a redirect, so it
+  // must run outside the try/catch above.
+  await signIn("instagram-handoff", {
+    token: createLoginHandoffToken(loginUserId!),
+    redirectTo: "/dashboard?connected=true",
+  });
+  return NextResponse.redirect(`${baseUrl}/dashboard`);
 }

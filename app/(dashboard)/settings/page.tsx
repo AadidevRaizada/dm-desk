@@ -27,6 +27,7 @@ import { getSettingsData } from "@/lib/server/settings";
 import { getCurrentWorkspaceContext } from "@/lib/workspace-access";
 import { prisma } from "@/lib/db/client";
 import { cn } from "@/lib/utils";
+import { HdPageHead } from "@/components/handdrawn/hd-bits";
 
 export default function SettingsPage() {
   return (
@@ -38,14 +39,11 @@ export default function SettingsPage() {
         <InstagramConnectNotice />
       </Suspense>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Settings
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, connections, team and more.
-        </p>
-      </div>
+      <HdPageHead
+        area="settings"
+        title="Settings"
+        line="Your account, Instagram and AI keys."
+      />
 
       {/* The session lookup + workspace/accounts/members reads stream inside
           this boundary under cacheComponents. */}
@@ -117,7 +115,7 @@ async function SettingsContent() {
         <Card className="lg:col-span-3">
           <CardContent className="gap-4">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Usage</h2>
+              <h2 className="font-display text-2xl leading-tight text-foreground">Usage</h2>
               <p className="text-sm text-muted-foreground">
                 Self-hosted with no plan limits.
               </p>
@@ -132,7 +130,7 @@ async function SettingsContent() {
                   Resets on the first of each month.
                 </p>
               </div>
-              <span className="text-2xl font-bold tabular-nums text-foreground">
+              <span className="font-display text-4xl leading-none tabular-nums text-foreground">
                 {settings.workspace?.dmsSentThisPeriod ?? 0}
               </span>
             </div>
@@ -142,7 +140,7 @@ async function SettingsContent() {
         <Card className="lg:col-span-2">
           <CardContent className="gap-4">
             <div>
-              <h2 className="text-base font-semibold text-foreground">
+              <h2 className="font-display text-2xl leading-tight text-foreground">
                 Need help?
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -160,7 +158,7 @@ async function SettingsContent() {
                 View documentation
               </a>
               <a
-                href="https://github.com/Xeven777/openinstadm/issues"
+                href="https://github.com/AadidevRaizada/dm-desk/issues"
                 target="_blank"
                 rel="noreferrer"
                 className={cn(

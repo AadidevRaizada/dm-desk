@@ -11,12 +11,12 @@ export function ModeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="rounded-full shadow bg-transparent size-8"
+      className="size-8 bg-transparent"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
       <Sun className="size-4 sm:size-5 rotate-0 scale-100 transition-all dark:-rotate-180 dark:scale-0 duration-500" />
       <Moon className="absolute size-4 sm:size-5 rotate-180 scale-0 transition-all dark:rotate-0 dark:scale-100 duration-500" />
-      <span className="sr-only">Toggle theme</span>
+      <span className="sr-only">Switch light or dark</span>
     </Button>
   );
 }

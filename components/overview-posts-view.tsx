@@ -362,11 +362,11 @@ function PostCard({ post: p }: { post: OverviewPost }) {
         )}
         <Badge
           variant="secondary"
-          className="absolute top-2 left-2 shadow-xs backdrop-blur-md"
+          className="absolute top-2 left-2 backdrop-blur-md"
         >
           {mediaTypeLabel(p.mediaType)}
         </Badge>
-        <span className="absolute right-2 bottom-2 rounded-md bg-background/85 px-1.5 py-0.5 text-[11px] font-medium shadow-xs backdrop-blur-md tabular-nums text-foreground">
+        <span className="absolute right-2 bottom-2 rounded-md bg-background/85 px-1.5 py-0.5 text-[11px] font-medium backdrop-blur-md tabular-nums text-foreground">
           {formatDate(p.timestamp)}
         </span>
       </div>
@@ -406,7 +406,7 @@ function PostCard({ post: p }: { post: OverviewPost }) {
   );
 
   const wrapper =
-    "group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs ring-1 ring-foreground/10 transition-colors hover:border-foreground/25";
+    "group flex flex-col overflow-hidden rounded-xl border border-border bg-card ring-1 ring-foreground/10 transition-colors hover:border-foreground/25";
 
   return p.permalink ? (
     <a

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { getCurrentWorkspaceId } from "@/lib/workspace-access";
 import { getLogsPage } from "@/lib/server/logs";
 import { getWorkspaceAccounts } from "@/lib/server/settings";
+import { HdPageHead } from "@/components/handdrawn/hd-bits";
 
 /**
  * DM Logs Page (Server Component)
@@ -75,7 +76,7 @@ function LogsSkeleton() {
           <Skeleton key={i} className="h-8 w-16 rounded-full" />
         ))}
       </div>
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs ring-1 ring-foreground/10">
+      <div className="overflow-hidden rounded-xl border border-border bg-card ring-1 ring-foreground/10">
         <Skeleton className="h-11 w-full rounded-none" />
         {[...Array(8)].map((_, i) => (
           <Skeleton key={i} className="h-11 w-full rounded-none" />
@@ -146,14 +147,7 @@ async function LogsContent({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            DM Logs
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every automated DM sent or skipped across your campaigns.
-          </p>
-        </div>
+        <HdPageHead area="logs" title="DM log" line="Every DM sent or skipped." className="min-w-0" />
         {accounts.length > 1 && (
           <AccountUrlFilter
             accounts={accounts.map((account) => ({

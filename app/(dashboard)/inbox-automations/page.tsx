@@ -11,7 +11,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
+import { sfx } from "@/lib/handdrawn";
+import { HdEmpty, HdPageHead } from "@/components/handdrawn/hd-bits";
 import { Robot } from "@phosphor-icons/react";
 import AccountSelect, { type AccountOption } from "@/components/account-select";
 import { Button } from "@/components/ui/button";
@@ -159,7 +161,8 @@ export default function InboxAutomationsPage() {
         const first = details && Object.keys(details)[0];
         throw new Error(first ? `${first}: ${details[first][0]}` : data?.error ?? "Failed to save");
       }
-      gooeyToast.success(config ? "Config saved" : "Config created");
+      if (isActive && !config?.isActive) sfx("yes"); // replies went live
+      gooeyToast.success(isActive ? "Saved. Replies are on." : "Saved. Replies are off.");
       invalidate();
     } catch (e) {
       gooeyToast.error(e instanceof Error ? e.message : "Failed to save");
@@ -211,12 +214,12 @@ export default function InboxAutomationsPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Inbox Automations</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            One master config per account — AI reply first, then simple fallback. Fixes keyword-shadow bugs.
-          </p>
-        </div>
+        <HdPageHead
+          area="inboxAutomations"
+          title="DM replies"
+          line="When someone DMs you, reply for you. AI first, then your fallback."
+          className="min-w-0"
+        />
         {accounts.length > 0 && (
           <AccountSelect
             accounts={accounts}
@@ -230,11 +233,11 @@ export default function InboxAutomationsPage() {
       {!canManage && <p className="text-sm text-muted-foreground">You have view-only access.</p>}
 
       {!selectedAccountId ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Connect an Instagram account to configure inbox replies.
-          </CardContent>
-        </Card>
+        <HdEmpty
+          area="inboxAutomations"
+          title="No Instagram account yet"
+          line="Connect your account in Settings and the raccoon can start answering DMs."
+        />
       ) : configQuery.isPending ? (
         <div className="space-y-3">
           <Skeleton className="h-48 w-full" />
@@ -245,14 +248,14 @@ export default function InboxAutomationsPage() {
           <Card>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Master Config</h2>
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch checked={isActive} onCheckedChange={setIsActive} disabled={!canManage} /> Active
+                <h2 className="font-display text-2xl leading-tight">Reply settings</h2>
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  <Switch checked={isActive} onCheckedChange={setIsActive} disabled={!canManage} /> {isActive ? "On" : "Off"}
                 </label>
               </div>
               {config && (
                 <p className="text-xs text-muted-foreground">
-                  One row per account — editing the single master database entry.
+                  One set of replies for this account.
                 </p>
               )}
               {!config && !owner && (
@@ -346,7 +349,7 @@ export default function InboxAutomationsPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => void save()} disabled={saving || !canManage || (!config && !owner)}>
-                    {saving ? "Saving…" : config ? "Save changes" : "Create config"}
+                    {saving ? "Saving…" : "Save"}
                   </Button>
                 </div>
               </div>
@@ -355,8 +358,8 @@ export default function InboxAutomationsPage() {
 
           <Card>
             <CardContent className="space-y-3">
-              <h2 className="text-sm font-semibold">Test playground</h2>
-              <p className="text-xs text-muted-foreground">Test the saved configuration — save changes before testing. AI first, then fallback. No message is sent.</p>
+              <h2 className="font-display text-2xl leading-tight">Try it</h2>
+              <p className="text-xs text-muted-foreground">Type a message to see the reply. Uses what you saved. Nothing is sent.</p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   value={playgroundInput}
@@ -381,13 +384,13 @@ export default function InboxAutomationsPage() {
                       </p>
                       <p className="mt-2 whitespace-pre-wrap">{playgroundResult.reply}</p>
                       {playgroundResult.aiError && (
-                        <p className="mt-1 text-xs text-amber-600">AI failed, showed fallback: {playgroundResult.aiError}</p>
+                        <p className="mt-1 text-xs text-warning">AI failed, showed fallback: {playgroundResult.aiError}</p>
                       )}
                     </>
                   ) : (
                     <div>
                       <p className="text-muted-foreground">No reply would be sent for this message.</p>
-                      {playgroundResult.aiError && <p className="mt-1 text-xs text-amber-600">{playgroundResult.aiError}</p>}
+                      {playgroundResult.aiError && <p className="mt-1 text-xs text-warning">{playgroundResult.aiError}</p>}
                     </div>
                   )}
                 </div>

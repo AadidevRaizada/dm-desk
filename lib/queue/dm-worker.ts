@@ -1,4 +1,5 @@
 import { Worker, UnrecoverableError, type Job } from "bullmq";
+import { DEFAULT_FOLLOW_PROMPT, DEFAULT_FOLLOW_BUTTON, DEFAULT_PUBLIC_REPLIES } from "@/lib/templates/default-messages";
 import {
   getDMQueue,
   getRedisConnection,
@@ -456,7 +457,7 @@ async function processComment(job: Job<ProcessCommentJob>): Promise<void> {
         ? automation.publicReplyMessages
         : automation.publicReplyMessage
           ? [automation.publicReplyMessage]
-          : [];
+          : DEFAULT_PUBLIC_REPLIES;
     if (
       automation.publicReplyEnabled &&
       replyPool.length > 0 &&
@@ -652,7 +653,7 @@ async function processComment(job: Job<ProcessCommentJob>): Promise<void> {
         const promptText = renderMessageWithoutLink({
           message:
             automation.followPromptMessage ||
-            "quick favor before i send your link. i don't make any money from this, it's free. if you want to support me, just don't unfollow after, and star the repo on github if it helps you. tap the button once you're following and i'll send it over",
+            DEFAULT_FOLLOW_PROMPT,
           commenterName,
         });
         await sendPrivateReplyWithButton(
@@ -660,7 +661,7 @@ async function processComment(job: Job<ProcessCommentJob>): Promise<void> {
           automation.instagramAccount.instagramId,
           commentId,
           promptText,
-          automation.followPromptButtonLabel || "i'm following",
+          automation.followPromptButtonLabel || DEFAULT_FOLLOW_BUTTON,
           `followcheck:${automation.id}`
         );
       } else if (automation.trackedLinks.length > 0) {
@@ -786,7 +787,13 @@ async function processComment(job: Job<ProcessCommentJob>): Promise<void> {
           errorMessage: formatError(error),
         },
       });
-      throw error;
+      // Sends are not idempotent: Meta's "unknown error" (code 1) often still
+      // delivers, and a comment allows a single private reply anyway. Retrying
+      // the job re-sent the DM to the same person over and over, so a failed
+      // send is final. Rate limits have their own requeue path above.
+      // Network errors never reached Meta, so nothing was sent: safe to retry.
+    if (error instanceof RateLimitError || !(error instanceof MetaApiError)) throw error;
+      throw new UnrecoverableError(formatError(error));
     }
   }
 }
@@ -838,7 +845,9 @@ async function processPostback(job: Job<ProcessPostbackJob>): Promise<void> {
         },
       },
     });
-    if (existingReveal?.status === "SENT") return;
+    // Any earlier reveal attempt (even one that errored) ends the fallback:
+    // the read fallback must never send the link twice.
+    if (existingReveal) return;
   }
 
   // Personalize {username} from the opening DM log for this user, if present.
@@ -868,7 +877,7 @@ async function processPostback(job: Job<ProcessPostbackJob>): Promise<void> {
       const promptText = renderMessageWithoutLink({
         message:
           automation.followPromptMessage ||
-          "quick favor before i send your link. i don't make any money from this, it's free. if you want to support me, just don't unfollow after, and star the repo on github if it helps you. tap the button once you're following and i'll send it over",
+          DEFAULT_FOLLOW_PROMPT,
         commenterName,
       });
       try {
@@ -877,7 +886,7 @@ async function processPostback(job: Job<ProcessPostbackJob>): Promise<void> {
           automation.instagramAccount.instagramId,
           userId,
           promptText,
-          automation.followPromptButtonLabel || "i'm following",
+          automation.followPromptButtonLabel || DEFAULT_FOLLOW_BUTTON,
           `followcheck:${automation.id}`
         );
       } catch (error) {
@@ -993,7 +1002,10 @@ async function processPostback(job: Job<ProcessPostbackJob>): Promise<void> {
       },
       update: { status: "FAILED", errorMessage: formatError(error) },
     });
-    throw error;
+    // Not retried: a retry re-sends the link if Meta delivered despite erroring.
+    // Network errors never reached Meta, so nothing was sent: safe to retry.
+    if (error instanceof RateLimitError || !(error instanceof MetaApiError)) throw error;
+    throw new UnrecoverableError(formatError(error));
   }
 }
 
@@ -1074,7 +1086,9 @@ async function processFollowUp(job: Job<ProcessFollowUpJob>): Promise<void> {
     ) {
       throw new UnrecoverableError(formatError(error));
     }
-    throw error;
+    // Network errors never reached Meta, so nothing was sent: safe to retry.
+    if (error instanceof RateLimitError || !(error instanceof MetaApiError)) throw error;
+    throw new UnrecoverableError(formatError(error));
   }
   await prisma.dmLog.update({
     where,

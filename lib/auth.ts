@@ -3,6 +3,8 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
+import Credentials from "next-auth/providers/credentials";
+import { verifyLoginHandoffToken } from "@/lib/meta/oauth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db/client";
 import { ensureWorkspaceForUser } from "@/lib/workspace";
@@ -49,11 +51,26 @@ function buildProviders(): NextAuthConfig["providers"] {
     providers.push(
       Resend({
         apiKey: process.env.RESEND_API_KEY!,
-        from: process.env.EMAIL_FROM ?? "OpenInstaDM <login@example.com>",
+        from: process.env.EMAIL_FROM ?? "DM Desk <login@example.com>",
         sendVerificationRequest,
       })
     );
   }
+  // Sign in with Instagram: /api/instagram/callback verifies the user with
+  // Instagram, then hands them over here with a 2-minute signed token.
+  providers.push(
+    Credentials({
+      id: "instagram-handoff",
+      name: "Instagram",
+      credentials: { token: {} },
+      async authorize(credentials) {
+        const userId = verifyLoginHandoffToken(credentials?.token);
+        if (!userId) return null;
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        return user ? { id: user.id, name: user.name, email: user.email } : null;
+      },
+    })
+  );
   // Allow boot even if no provider is configured — /login will show a setup hint.
   // This keeps local dev and CI from crashing when env is still being wired.
   return providers;

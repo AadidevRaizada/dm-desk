@@ -2,6 +2,7 @@
 
 import AppSidebar from "@/components/sidebar";
 import TopBar from "@/components/top-bar";
+import MobileTabBar from "@/components/mobile-tab-bar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "./ui/tooltip";
 
@@ -44,10 +45,13 @@ export default function DashboardShell({
             instagramUsername={instagramUsername}
             instagramAccountCount={instagramAccountCount}
           />
-          <div className="flex flex-1 flex-col gap-4 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+          <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 pb-28 md:pb-8 lg:p-8">
             {children}
           </div>
         </SidebarInset>
+        {/* Outside <main> on purpose: a fixed bar must not share a subtree with
+            page content that may get transforms/filters (iOS Safari repaint bug). */}
+        <MobileTabBar />
       </TooltipProvider>
     </SidebarProvider>
   );

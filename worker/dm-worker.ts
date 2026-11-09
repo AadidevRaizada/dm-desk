@@ -4,6 +4,7 @@ loadEnv();
 import { createDMWorker } from "@/lib/queue/dm-worker";
 import { recordWorkerHeartbeat } from "@/lib/ops/worker-health";
 import { reconcileComments } from "@/lib/polling/comment-reconciler";
+import { publishDuePosts } from "@/lib/scheduling/publisher";
 import os from "node:os";
 
 const worker = createDMWorker();
@@ -18,7 +19,11 @@ const HEARTBEAT_INTERVAL_MS = 30_000;
 // comment Meta's webhooks miss is now picked up up to 90 minutes late instead
 // of 60. Polling covers comments only — DM inbox automations are webhook-only
 // and never need this sweep.
-const POLL_INTERVAL_MS = 90 * 60_000;
+// One account on an always-on Mac: poll often so comment→DM still works if
+// Meta withholds comment webhooks (they need Advanced Access). Override with
+// COMMENT_POLL_MINUTES.
+const POLL_INTERVAL_MS =
+  Math.max(1, Number(process.env.COMMENT_POLL_MINUTES ?? "2")) * 60_000;
 const POLL_DISABLED = false;
 
 console.log(
@@ -69,9 +74,33 @@ if (!POLL_DISABLED) {
   console.log("[DM Worker] Comment polling disabled — webhook-only mode");
 }
 
+// Scheduled reels: publish anything due, every minute. A publish can poll
+// Instagram for up to ~10 minutes, so ticks skip while one is running.
+// /api/cron/publish-scheduled is a backup caller; claims make overlap safe.
+const PUBLISH_INTERVAL_MS = 60_000;
+let publishRunning = false;
+async function publishTick() {
+  if (publishRunning) return;
+  publishRunning = true;
+  try {
+    const result = await publishDuePosts();
+    if (result.claimed || result.recovered) {
+      console.log("[DM Worker] Scheduled posts:", JSON.stringify(result));
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[DM Worker] Scheduled publish failed:", message);
+  } finally {
+    publishRunning = false;
+  }
+}
+const publishTimer = setInterval(() => void publishTick(), PUBLISH_INTERVAL_MS);
+setTimeout(() => void publishTick(), 15_000);
+
 async function shutdown(signal: string) {
   console.log(`[DM Worker] ${signal} received, closing worker`);
   clearInterval(heartbeatTimer);
+  clearInterval(publishTimer);
   if (pollTimer) clearTimeout(pollTimer);
   await worker.close();
   process.exit(0);

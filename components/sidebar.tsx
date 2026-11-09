@@ -10,13 +10,14 @@ import {
   Check,
   Gear,
   ListDashes,
+  MagnetStraight,
   Megaphone,
   Pulse,
   Robot,
   SquaresFour,
   type Icon,
 } from "@phosphor-icons/react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +40,7 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import Image from "next/image";
+import { AhumMark } from "@/components/handdrawn/critter-art";
 
 interface NavItem {
   label: string;
@@ -49,26 +50,27 @@ interface NavItem {
 
 const navSections: Array<{ label: string; items: NavItem[] }> = [
   {
-    label: "Workspace",
+    label: "Your desk",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: SquaresFour },
-      { label: "Overview", href: "/overview", icon: ChartLine },
+      { label: "Home", href: "/dashboard", icon: SquaresFour },
       { label: "Inbox", href: "/inbox", icon: ChatCircle },
+      { label: "Stats", href: "/overview", icon: ChartLine },
+      { label: "Coach", href: "/coach", icon: MagnetStraight },
     ],
   },
   {
-    label: "Automation",
+    label: "Automations",
     items: [
-      { label: "Campaigns", href: "/campaigns", icon: Megaphone },
-      { label: "Inbox Automations", href: "/inbox-automations", icon: Robot },
-      { label: "DM Logs", href: "/logs", icon: ListDashes },
+      { label: "Comment to DM", href: "/campaigns", icon: Megaphone },
+      { label: "DM replies", href: "/inbox-automations", icon: Robot },
+      { label: "DM log", href: "/logs", icon: ListDashes },
     ],
   },
   {
-    label: "System",
+    label: "Setup",
     items: [
       { label: "Settings", href: "/settings", icon: Gear },
-      { label: "Diagnostics", href: "/diagnostics", icon: Pulse },
+      { label: "Health check", href: "/diagnostics", icon: Pulse },
     ],
   },
 ];
@@ -123,20 +125,12 @@ export default function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              tooltip="OpenInstaDM"
+              tooltip="DM Desk"
               render={<Link href="/dashboard" />}
             >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground overflow-hidden">
-                <Image
-                  src="/logo2.svg"
-                  alt="OpenInstaDM"
-                  width={20}
-                  height={20}
-                  unoptimized
-                />
-              </span>
-              <span className="grid flex-1 text-left text-sm leading-tight truncate md:text-lg tracking-tight font-medium">
-                OpenInstaDM
+              <AhumMark className="size-8 shrink-0" />
+              <span className="grid flex-1 truncate text-left font-display text-3xl leading-none">
+                DM Desk
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -189,10 +183,7 @@ export default function AppSidebar({
                 }
               >
                 <Avatar className="size-8 rounded-full">
-                  <AvatarImage
-                    src={`https://api.dicebear.com/10.x/glass/svg?seed=${encodeURIComponent(workspaceName)}`}
-                  />
-                  <AvatarFallback className="rounded-full bg-primary/15 text-primary text-xs font-bold">
+                  <AvatarFallback className="rounded-full border-2 border-ink bg-dog font-display text-sm text-ink">
                     {workspaceInitials(workspaceName)}
                   </AvatarFallback>
                 </Avatar>
@@ -224,10 +215,7 @@ export default function AppSidebar({
                       className="gap-2 p-2"
                     >
                       <Avatar className="size-8 rounded-full">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/10.x/glass/svg?seed=${encodeURIComponent(workspace.name)}`}
-                        />
-                        <AvatarFallback className="rounded-full bg-primary/15 text-primary text-xs font-bold">
+                        <AvatarFallback className="rounded-full border-2 border-ink bg-dog font-display text-sm text-ink">
                           {workspaceInitials(workspace.name)}
                         </AvatarFallback>
                       </Avatar>

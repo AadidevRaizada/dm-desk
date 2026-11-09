@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["tunnel.auradevs.co"],
+  allowedDevOrigins: ["instagram.ahumlabs.com"],
   // Cache Components: enables `use cache`/`cacheLife` and Partial Prerendering.
   // With it, `dynamic`/`revalidate`/`fetchCache` segment configs are replaced
   // by the new caching model — data fetching is dynamic by default and the
@@ -35,9 +35,18 @@ const nextConfig: NextConfig = {
   },
   reactCompiler: true,
   async redirects() {
+    // DM Desk is private: the original project's marketing/SEO pages go to sign-in.
+    const marketing = [
+      "/auto-reply-instagram-comments", "/chatfuel-alternative", "/comment-link-automation",
+      "/docs/:path*", "/docs", "/instagram-auto-dm", "/instagram-comment-to-dm-examples",
+      "/instagram-dm-automation-agencies", "/instagram-keyword-automation",
+      "/instagram-lead-magnet-automation", "/linkdm-alternative", "/manychat-alternative",
+      "/instagram-comment-to-dm-templates",
+    ].map((source) => ({ source, destination: "/login", permanent: false }));
     return [
+      ...marketing,
       {
-        source: "/instagram-comment-to-dm-templates",
+        source: "/instagram-comment-to-dm-templates-old",
         destination: "/instagram-comment-to-dm-examples",
         permanent: true,
       },

@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
 import { SignOut, Trash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -286,7 +286,7 @@ export default function SettingsTeam({
       <CardContent className="gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Team</h2>
+            <h2 className="font-display text-2xl leading-tight text-foreground">Team</h2>
             <p className="text-sm text-muted-foreground">
               {members.members.length} member{members.members.length === 1 ? "" : "s"}
               {pendingInvites > 0 &&

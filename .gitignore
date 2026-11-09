@@ -44,3 +44,6 @@ next-env.d.ts
 
 /app/generated/prisma
 .gstack/
+
+# Coach: uploaded reels, whisper models, temp frames (never commit)
+/storage/

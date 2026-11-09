@@ -25,6 +25,7 @@ import {
   getDiagnosticsOverview,
   getDiagnosticsSections,
 } from "@/lib/server/diagnostics";
+import { HdPageHead } from "@/components/handdrawn/hd-bits";
 
 /**
  * Diagnostics Page (Server Component)
@@ -84,14 +85,7 @@ export default function DiagnosticsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Diagnostics
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Health, queues, webhook failures, billing events, and worker alerts.
-          </p>
-        </div>
+        <HdPageHead area="logs" title="Health check" line="Is everything running? The dog checks." className="min-w-0" />
         <DiagnosticsRefresh />
       </div>
       {/* Redis reads are near-instant: paint them first, stream Postgres after */}

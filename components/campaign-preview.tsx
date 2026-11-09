@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { DEFAULT_FOLLOW_PROMPT, DEFAULT_FOLLOW_BUTTON } from "@/lib/templates/default-messages";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -152,7 +153,7 @@ function StatusBar() {
 }
 
 function Phone({ children }: { children: React.ReactNode }) {
-  const btn = "absolute w-[3px] rounded-sm bg-gradient-to-r from-zinc-500 to-zinc-700";
+  const btn = "absolute w-[3px] rounded-sm bg-ink";
   return (
     <div className="relative w-[300px]">
       {/* Left side buttons: action, volume up, volume down */}
@@ -160,11 +161,11 @@ function Phone({ children }: { children: React.ReactNode }) {
       <span className={`${btn} -left-[2px] top-[140px] h-12`} />
       <span className={`${btn} -left-[2px] top-[200px] h-12`} />
       {/* Right side buttons: side/power, camera control */}
-      <span className={`${btn} -right-[2px] left-auto top-[150px] h-20 bg-gradient-to-l`} />
-      <span className={`${btn} -right-[2px] left-auto top-[250px] h-9 bg-gradient-to-l`} />
+      <span className={`${btn} -right-[2px] left-auto top-[150px] h-20`} />
+      <span className={`${btn} -right-[2px] left-auto top-[250px] h-9`} />
 
-      {/* Titanium frame → black bezel → screen */}
-      <div className="relative rounded-[3rem] bg-gradient-to-br from-zinc-500 via-zinc-700 to-zinc-600 p-[3px] shadow-2xl">
+      {/* Ink outline (hand-drawn) → black bezel → screen */}
+      <div className="relative rounded-[3rem] bg-ink p-[3px]">
         <div className="rounded-[2.85rem] bg-black p-[9px]">
           <div className="relative h-[640px] overflow-hidden rounded-[2.3rem] bg-black">
             {/* Dynamic Island */}
@@ -393,16 +394,16 @@ function DmScreen({
               <div className="max-w-[80%] overflow-hidden rounded-2xl rounded-bl-md bg-zinc-800">
                 <p className="whitespace-pre-wrap px-3 py-2 text-sm">
                   {followPromptMessage ||
-                    "quick favor before i send your link. i don't make any money from this, it's free. if you want to support me, just don't unfollow after, and star the repo on github if it helps you. tap the button once you're following and i'll send it over"}
+                    DEFAULT_FOLLOW_PROMPT}
                 </p>
                 <div className="mx-1.5 mb-1.5 rounded-xl bg-zinc-700 px-4 py-1.5 text-center text-sm font-medium text-white">
-                  {followPromptButtonLabel || "i'm following"}
+                  {followPromptButtonLabel || DEFAULT_FOLLOW_BUTTON}
                 </div>
               </div>
             </div>
             <div className="flex justify-end">
               <div className="rounded-2xl rounded-br-md bg-primary px-3 py-2 text-sm text-primary-foreground">
-                {followPromptButtonLabel || "i'm following"}
+                {followPromptButtonLabel || DEFAULT_FOLLOW_BUTTON}
               </div>
             </div>
           </>

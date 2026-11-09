@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
 import { Check, CircleNotch, WarningCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,7 @@ export default function SettingsProfile({
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="truncate text-base font-semibold text-foreground">
+              <h2 className="truncate font-display text-2xl leading-tight text-foreground">
                 {savedName || "Profile"}
               </h2>
               {userRole && (

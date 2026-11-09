@@ -4,6 +4,8 @@ function instagramGraphBase() {
   return `https://graph.instagram.com/${getMetaGraphApiVersion()}`;
 }
 
+// Token endpoints are unversioned: graph.instagram.com/v26.0/access_token
+// answers "Unsupported request - method type: get" (code 100).
 function facebookGraphBase() {
   return `https://graph.facebook.com/${getMetaGraphApiVersion()}`;
 }
@@ -649,6 +651,22 @@ export async function getAllUserMedia(
 }
 
 /**
+ * Fetch one media object (fresh `media_url`, which is a short-lived CDN link).
+ * Used by the Coach reel analyzer to download the video file.
+ */
+export async function getMediaById(
+  accessToken: string,
+  mediaId: string,
+  fields: string = MEDIA_FIELDS
+): Promise<InstagramMedia> {
+  const url = new URL(`${instagramGraphBase()}/${encodeURIComponent(mediaId)}`);
+  url.searchParams.set("fields", fields);
+  url.searchParams.set("access_token", accessToken);
+  const response = await fetch(url.toString());
+  return handleResponse<InstagramMedia>(response);
+}
+
+/**
  * Fetch per-media insight metrics (views, reach, saved, shares, etc.).
  *
  * Requires the `instagram_business_manage_insights` permission — accounts
@@ -667,13 +685,19 @@ export async function getMediaInsights(
 
   const response = await fetch(url.toString());
   const data = await handleResponse<{
-    data: Array<{ name: string; values: Array<{ value: number }> }>;
+    data: Array<{
+      name: string;
+      values?: Array<{ value: number }>;
+      total_value?: { value: number };
+    }>;
   }>(response);
 
   const result: InstagramMediaInsights = {};
   for (const entry of data.data) {
+    // Meta returns some metrics as values[0].value and newer ones (e.g.
+    // reels_skip_rate) as total_value.value — accept either.
     result[entry.name as keyof InstagramMediaInsights] =
-      entry.values?.[0]?.value ?? 0;
+      entry.values?.[0]?.value ?? entry.total_value?.value ?? 0;
   }
   return result;
 }
@@ -750,7 +774,7 @@ export async function getFollowerCountSeries(
 export async function getLongLivedToken(
   shortLivedToken: string
 ): Promise<{ accessToken: string; expiresIn: number }> {
-  const url = new URL(`${instagramGraphBase()}/access_token`);
+  const url = new URL("https://graph.instagram.com/access_token");
   url.searchParams.set("grant_type", "ig_exchange_token");
   url.searchParams.set("client_secret", requireEnv("INSTAGRAM_APP_SECRET"));
   url.searchParams.set("access_token", shortLivedToken);
@@ -767,7 +791,7 @@ export async function getLongLivedToken(
 export async function refreshLongLivedToken(
   longLivedToken: string
 ): Promise<{ accessToken: string; expiresIn: number }> {
-  const url = new URL(`${instagramGraphBase()}/refresh_access_token`);
+  const url = new URL("https://graph.instagram.com/refresh_access_token");
   url.searchParams.set("grant_type", "ig_refresh_token");
   url.searchParams.set("access_token", longLivedToken);
 
@@ -810,4 +834,191 @@ export async function debugToken(inputToken: string, accessToken: string) {
   url.searchParams.set("access_token", accessToken);
   const response = await fetch(url.toString());
   return handleResponse(response);
+}
+
+/* ------------------------------------------------------------------------
+ * Content publishing (Reels) — Instagram API with Instagram Login.
+ * Flow: create container → (resumable upload | Meta fetches video_url) →
+ * poll status_code until FINISHED → media_publish → read permalink.
+ * Needs the instagram_business_content_publish permission.
+ * ---------------------------------------------------------------------- */
+
+export interface ReelContainerOptions {
+  caption: string;
+  shareToFeed: boolean;
+  /** Cover frame in milliseconds from the start (ignored when coverUrl set). */
+  thumbOffsetMs?: number | null;
+  coverUrl?: string | null;
+  /** Public HTTPS URL Meta fetches the video from. Omit for a resumable upload. */
+  videoUrl?: string | null;
+}
+
+export type ContainerStatusCode =
+  | "EXPIRED"
+  | "ERROR"
+  | "FINISHED"
+  | "IN_PROGRESS"
+  | "PUBLISHED";
+
+export interface ContainerStatus {
+  id: string;
+  status_code: ContainerStatusCode;
+  /** Human-readable detail Meta sometimes includes when status_code is ERROR. */
+  status?: string;
+}
+
+export interface ContentPublishingLimit {
+  quota_usage: number;
+  config?: { quota_total?: number; quota_duration?: number };
+}
+
+/** rupload host for resumable Reels uploads (same API version as the Graph calls). */
+export function reelUploadUrl(containerId: string): string {
+  return `https://rupload.facebook.com/ig-api-upload/${getMetaGraphApiVersion()}/${containerId}`;
+}
+
+/**
+ * Step 1: create a REELS media container. With no videoUrl it is created with
+ * upload_type=resumable and the bytes go to uploadReelVideo() next.
+ */
+export async function createReelContainer(
+  accessToken: string,
+  igUserId: string,
+  options: ReelContainerOptions
+): Promise<{ id: string; uri?: string }> {
+  const body: Record<string, string | boolean | number> = {
+    media_type: "REELS",
+    caption: options.caption,
+    share_to_feed: options.shareToFeed,
+  };
+  if (options.videoUrl) body.video_url = options.videoUrl;
+  else body.upload_type = "resumable";
+  if (options.coverUrl) body.cover_url = options.coverUrl;
+  else if (options.thumbOffsetMs && options.thumbOffsetMs > 0)
+    body.thumb_offset = Math.round(options.thumbOffsetMs);
+
+  const response = await fetch(`${instagramGraphBase()}/${igUserId}/media`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response);
+}
+
+/**
+ * Step 2 (resumable only): send the video bytes to rupload.facebook.com.
+ * `body` may be a Buffer or a web ReadableStream (streamed from disk).
+ */
+export async function uploadReelVideo(
+  accessToken: string,
+  containerId: string,
+  body: Buffer | ReadableStream<Uint8Array>,
+  fileSize: number
+): Promise<{ success?: boolean; message?: string }> {
+  const init: RequestInit & { duplex?: "half" } = {
+    method: "POST",
+    headers: {
+      Authorization: `OAuth ${accessToken}`,
+      offset: "0",
+      file_size: String(fileSize),
+      "Content-Type": "application/octet-stream",
+    },
+    body: body as BodyInit,
+  };
+  if (!(body instanceof Buffer)) init.duplex = "half";
+  const response = await fetch(reelUploadUrl(containerId), init);
+  const text = await response.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { message: text };
+  }
+  const parsed = data as {
+    success?: boolean;
+    message?: string;
+    error?: GraphApiError["error"];
+    debug_info?: { retriable?: boolean; type?: string; message?: string };
+  };
+  if (!response.ok || parsed.error || parsed.debug_info) {
+    const err = parsed.error;
+    const message =
+      err?.message ??
+      parsed.debug_info?.message ??
+      parsed.message ??
+      `Upload failed (HTTP ${response.status})`;
+    const code = err?.code ?? response.status;
+    if (code === 190) throw new TokenExpiredError(message, err?.fbtrace_id);
+    if (code === 10 || code === 200) throw new PermissionError(message, err?.fbtrace_id);
+    throw new MetaApiError(code, err?.error_subcode, err?.fbtrace_id, `Video upload failed: ${message}`);
+  }
+  return parsed;
+}
+
+/** Step 3: container processing state. Poll until FINISHED / ERROR / EXPIRED. */
+export async function getContainerStatus(
+  accessToken: string,
+  containerId: string
+): Promise<ContainerStatus> {
+  const url = new URL(`${instagramGraphBase()}/${containerId}`);
+  url.searchParams.set("fields", "id,status_code,status");
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return handleResponse(response);
+}
+
+/** Step 4: publish a FINISHED container. Returns the new IG media id. */
+export async function publishMediaContainer(
+  accessToken: string,
+  igUserId: string,
+  creationId: string
+): Promise<{ id: string }> {
+  const response = await fetch(
+    `${instagramGraphBase()}/${igUserId}/media_publish`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ creation_id: creationId }),
+    }
+  );
+  return handleResponse(response);
+}
+
+/** Step 5: the public link of a published media object. */
+export async function getMediaPermalink(
+  accessToken: string,
+  mediaId: string
+): Promise<string | null> {
+  const url = new URL(`${instagramGraphBase()}/${mediaId}`);
+  url.searchParams.set("fields", "id,permalink");
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = await handleResponse<{ permalink?: string }>(response);
+  return data.permalink ?? null;
+}
+
+/** API-published posts used in the rolling 24h window (cap: 100). */
+export async function getContentPublishingLimit(
+  accessToken: string,
+  igUserId: string
+): Promise<ContentPublishingLimit | null> {
+  const url = new URL(
+    `${instagramGraphBase()}/${igUserId}/content_publishing_limit`
+  );
+  url.searchParams.set("fields", "quota_usage,config");
+  const response = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = await handleResponse<{ data?: ContentPublishingLimit[] }>(
+    response
+  );
+  return data.data?.[0] ?? null;
 }

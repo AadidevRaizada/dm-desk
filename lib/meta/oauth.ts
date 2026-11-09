@@ -17,6 +17,8 @@ const STATE_MAX_AGE_MS = 10 * 60 * 1000;
 interface OAuthStatePayload {
   workspaceId: string;
   ts: number;
+  // "login" = Sign in with Instagram (no session yet, no workspace yet).
+  mode?: "connect" | "login";
 }
 
 function base64UrlEncode(value: string): string {
@@ -40,6 +42,35 @@ export function createOAuthState(workspaceId: string): string {
   return `${payload}.${signState(payload)}`;
 }
 
+export function createLoginOAuthState(): string {
+  const payload = base64UrlEncode(
+    JSON.stringify({ workspaceId: "", ts: Date.now(), mode: "login" } satisfies OAuthStatePayload)
+  );
+  return `${payload}.${signState(payload)}`;
+}
+
+/** Short-lived signed token that hands an Instagram-verified user to NextAuth. */
+export function createLoginHandoffToken(userId: string): string {
+  const payload = base64UrlEncode(JSON.stringify({ userId, ts: Date.now() }));
+  return `${payload}.${signState("handoff:" + payload)}`;
+}
+
+export function verifyLoginHandoffToken(token: unknown): string | null {
+  if (typeof token !== "string") return null;
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return null;
+  const expected = Buffer.from(signState("handoff:" + payload));
+  const given = Buffer.from(signature);
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
+  try {
+    const { userId, ts } = JSON.parse(base64UrlDecode(payload)) as { userId: string; ts: number };
+    if (!userId || Date.now() - ts > 2 * 60 * 1000) return null;
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
 export function verifyOAuthState(state: string | null): OAuthStatePayload | null {
   if (!state) return null;
 
@@ -59,7 +90,7 @@ export function verifyOAuthState(state: string | null): OAuthStatePayload | null
 
   try {
     const parsed = JSON.parse(base64UrlDecode(payload)) as OAuthStatePayload;
-    if (!parsed.workspaceId || Date.now() - parsed.ts > STATE_MAX_AGE_MS) {
+    if ((!parsed.workspaceId && parsed.mode !== "login") || Date.now() - parsed.ts > STATE_MAX_AGE_MS) {
       return null;
     }
 
@@ -74,7 +105,7 @@ export function getAuthorizationUrl(redirectUri: string, state: string): string 
     client_id: requireEnv("INSTAGRAM_APP_ID"),
     redirect_uri: redirectUri,
     scope:
-      "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_manage_insights",
+      "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_manage_insights,instagram_business_content_publish",
     response_type: "code",
     state,
   });

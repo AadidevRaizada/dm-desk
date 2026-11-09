@@ -75,8 +75,123 @@ model Workspace {
   webhookEvents     WebhookEvent[]
   operationalEvents OperationalEvent[]
   apiSnapshots      ApiSnapshot[]
+  hookCoachProfile  HookCoachProfile?
+  coachPersonas     CoachPersona[]
+  coachAnalyses     CoachAnalysis[]
+  coachChats        CoachChat[]
+  scheduledPosts    ScheduledPost[]
 
   @@index([ownerId])
+}
+
+model HookCoachProfile {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  niche       String   @default("")
+  cta         String   @default("")
+  references  String[]
+  audience    String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// A configurable coach voice (e.g. "Retention editor"). The system prompt is
+/// built from `instructions`; one persona per workspace may be the default.
+model CoachPersona {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  name         String
+  emoji        String   @default("")
+  description  String   @default("")
+  instructions String
+  isDefault    Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  analyses  CoachAnalysis[]
+  chats     CoachChat[]
+
+  @@index([workspaceId])
+}
+
+/// A saved coach result so a reel is analysed once, not regenerated each visit.
+/// kind: "fix" (rewrite a posted reel), "analyze" (full reel breakdown),
+/// "write" (stories for an idea), "predict" (expected retention for a script).
+model CoachAnalysis {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  mediaId           String?
+  kind              String
+  personaId         String?
+  input             Json?
+  result            Json
+  expectedRetention Json?
+  createdAt         DateTime @default(now())
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  persona   CoachPersona? @relation(fields: [personaId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, mediaId, kind])
+}
+
+model CoachChat {
+  id          String   @id @default(cuid())
+  workspaceId String
+  personaId   String?
+  title       String   @default("New chat")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  persona   CoachPersona?  @relation(fields: [personaId], references: [id], onDelete: SetNull)
+  messages  CoachMessage[]
+
+  @@index([workspaceId, updatedAt])
+}
+
+model CoachMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String
+  content   String
+  data      Json?
+  createdAt DateTime @default(now())
+
+  chat CoachChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+}
+
+/// A reel queued for publishing via the Instagram Content Publishing API.
+/// status: SCHEDULED | PUBLISHING | PUBLISHED | FAILED | CANCELLED
+model ScheduledPost {
+  id                 String    @id @default(cuid())
+  workspaceId        String
+  instagramAccountId String
+  caption            String    @default("")
+  videoPath          String
+  coverPath          String?
+  shareToFeed        Boolean   @default(true)
+  scheduledAt        DateTime
+  status             String    @default("SCHEDULED")
+  containerId        String?
+  mediaId            String?
+  permalink          String?
+  error              String?
+  attempts           Int       @default(0)
+  publishedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([workspaceId, scheduledAt])
 }
 
 model AiProviderCredential {
@@ -151,6 +266,8 @@ model InstagramAccount {
   linkClicks        LinkClick[]
   followerSnapshots FollowerSnapshot[]
   apiSnapshots      ApiSnapshot[]
+
+  scheduledPosts    ScheduledPost[]
 
   @@index([workspaceId])
 }

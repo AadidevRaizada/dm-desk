@@ -17,20 +17,33 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "./theme-toggle";
+import SoundToggle from "./handdrawn/sound-toggle";
 import { canManageInstagramAccounts, useWorkspaceContext } from "@/lib/workspace-context";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/campaigns": "Campaigns",
-  "/campaigns/new": "New Campaign",
-  "/automations": "Campaigns",
-  "/automations/new": "New Campaign",
-  "/logs": "DM Logs",
+  "/dashboard": "Home",
+  "/campaigns": "Automations",
+  "/campaigns/new": "New automation",
+  "/campaigns/import": "Import",
+  "/automations": "Automations",
+  "/automations/new": "New automation",
+  "/inbox-automations": "DM replies",
+  "/logs": "DM log",
   "/settings": "Settings",
-  "/diagnostics": "Diagnostics",
-  "/overview": "Overview",
+  "/diagnostics": "Health check",
+  "/overview": "Stats",
+  "/coach": "Coach",
+  "/hooks": "Coach",
   "/inbox": "Inbox",
+  "/schedule": "Post a reel",
 };
+
+function titleFor(pathname: string): string {
+  if (pageTitles[pathname]) return pageTitles[pathname];
+  if (pathname.startsWith("/campaigns/") || pathname.startsWith("/automations/"))
+    return "Automation";
+  return "DM Desk";
+}
 
 interface TopBarProps {
   instagramUsername: string | null;
@@ -42,7 +55,7 @@ export default function TopBar({
   instagramAccountCount,
 }: TopBarProps) {
   const pathname = usePathname();
-  const title = pageTitles[pathname] ?? "Dashboard";
+  const title = titleFor(pathname);
   const canManageAccounts = canManageInstagramAccounts(useWorkspaceContext());
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -53,23 +66,23 @@ export default function TopBar({
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 lg:px-4 sticky top-0 w-full z-80">
-      <div className="flex items-center gap-2 justify-center">
-        <SidebarTrigger className="-ml-1" />
+    <header className="hd-chrome sticky top-0 z-80 flex h-14 w-full shrink-0 items-center gap-2 border-b-[2.5px] border-ink bg-paper px-3 sm:px-4">
+      <div className="flex min-w-0 items-center gap-2">
+        <SidebarTrigger className="-ml-1" aria-label="Menu" />
         <Separator
           orientation="vertical"
-          className="mr-2 data-[orientation=vertical]:h-4"
+          className="mr-1 data-[orientation=vertical]:h-5"
         />
-        <h1 className="text-sm font-semibold sm:text-base">{title}</h1>
+        <p className="truncate font-display text-2xl leading-none">{title}</p>
       </div>
 
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
         {instagramAccountCount > 0 ? (
           <a
             href={"https://instagram.com/" + instagramUsername}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 truncate text-sm bg-linear-to-tl from-fuchsia-500 via-red-600 to-orange-400 text-transparent bg-clip-text dark:brightness-135 font-semibold tracking-tight"
+            className="hidden max-w-40 shrink-0 truncate text-sm font-semibold underline decoration-wavy decoration-hd-accent underline-offset-4 sm:inline"
           >
             {instagramAccountCount > 1
               ? `${instagramAccountCount} accounts`
@@ -87,6 +100,7 @@ export default function TopBar({
             <span className="hidden sm:inline">Connect Instagram</span>
           </a>
         ) : null}
+        <SoundToggle />
         <ModeToggle />
         <Button
           variant="ghost"
@@ -109,8 +123,7 @@ export default function TopBar({
           <DialogHeader>
             <DialogTitle>Sign out?</DialogTitle>
             <DialogDescription>
-              You will return to the sign-in page. Your campaigns and account
-              data will stay unchanged.
+              You will go back to the sign-in page. Nothing else changes.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

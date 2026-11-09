@@ -3,19 +3,19 @@ import { signIn } from "@/lib/auth";
 import { getCampaignTemplate } from "@/lib/templates/campaign-templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import Image from "next/image";
 import {
   ArrowRightIcon,
-  StarIcon,
   GithubLogoIcon,
   GoogleLogoIcon,
+  InstagramLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import { FlickeringGrid } from "@/components/ui/flickering-grid";
+import { AhumMark, LoginScene } from "@/components/handdrawn/critter-art";
+import SoundToggle from "@/components/handdrawn/sound-toggle";
+import { ModeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
-  title: "Sign in - OpenInstaDM",
-  description: "Sign in to manage Instagram comment-to-DM campaigns.",
+  title: "Sign in - DM Desk",
+  description: "Your Instagram DMs, stats and hooks in one place.",
 };
 
 type LoginSearchParams = Promise<{
@@ -78,7 +78,7 @@ export default function LoginPage({
   searchParams: LoginSearchParams;
 }) {
   return (
-    <Suspense fallback={<div className="min-h-screen" />}>
+    <Suspense fallback={<div className="min-h-dvh" />}>
       <LoginContent searchParams={searchParams} />
     </Suspense>
   );
@@ -122,92 +122,55 @@ async function LoginContent({ searchParams }: { searchParams: LoginSearchParams 
   }
 
   return (
-    <div className="min-h-screen flex">
-      <div className="flex-1 flex items-center justify-center px-6 lg:px-12">
-        <div className="w-full max-w-sm">
-          {/* Logo */}
-          <div className="mb-10">
-            <Image
-              src="/logo3.svg"
-              width={36}
-              height={40}
-              alt="OpenInstaDM"
-              unoptimized
-              className="h-9 w-auto"
-            />
-          </div>
+    <div className="flex min-h-dvh flex-col">
+      <header className="flex items-center justify-end gap-2 px-4 pt-4">
+        <SoundToggle />
+        <ModeToggle />
+      </header>
 
-          {/* Heading */}
-          <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+      <main className="flex flex-1 items-start justify-center px-4 pb-10 pt-2 sm:items-center">
+        <div className="w-full max-w-sm">
+          <LoginScene className="mx-auto w-full max-w-[320px]" />
+
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <AhumMark className="size-9" />
+            <h1 className="font-display text-5xl leading-none">DM Desk</h1>
+          </div>
+          <p className="mt-3 text-center text-base leading-relaxed">
             {selectedTemplate
               ? `Sign in to use the ${selectedTemplate.title} template.`
-              : hasOAuth
-                ? "Sign in with your account to manage Instagram automations."
-                : "Sign in by email, then connect your Instagram professional account."}
+              : "Your Instagram DMs, stats and hooks in one place."}
           </p>
 
           {errorInfo && (
-            <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm leading-6">
-              <p className="font-semibold text-destructive">
-                {errorInfo.title}
-              </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <div
+              role="alert"
+              className="hr3 mt-6 border-2 border-hd-accent bg-paper2 px-4 py-3 text-sm leading-6"
+            >
+              <p className="font-semibold text-hd-accent">{errorInfo.title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {errorInfo.description}
               </p>
-              {params.error === "OAuthAccountNotLinked" && hasResend && (
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Tip: Sign in with your magic link first, or delete the old
-                  verification and retry - after this fix, verified
-                  Google/GitHub emails will auto-link.
-                </p>
-              )}
             </div>
           )}
 
-          {!hasAnyProvider && (
-            <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
-              <p className="font-semibold">No sign-in provider configured</p>
-              <p className="mt-1 text-xs leading-5 opacity-80">
-                Set{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/50">
-                  GOOGLE_CLIENT_ID
-                </code>{" "}
-                /{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/50">
-                  GOOGLE_CLIENT_SECRET
-                </code>{" "}
-                or{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/50">
-                  GITHUB_ID
-                </code>{" "}
-                /{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/50">
-                  GITHUB_SECRET
-                </code>{" "}
-                in your{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/50">
-                  .env
-                </code>
-                . See{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/50">
-                  .env.example
-                </code>
-                .
-              </p>
-            </div>
-          )}
+          <a
+            href="/api/instagram/login"
+            className="clicky hr1 mt-7 flex h-14 w-full items-center justify-center gap-2.5 border-[2.5px] border-ink bg-hd-accent font-display text-2xl text-paper2 transition-opacity hover:opacity-90"
+          >
+            <InstagramLogoIcon size={26} weight="bold" />
+            Sign in with Instagram
+          </a>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Only invited accounts can sign in.
+          </p>
 
+          {/* Other sign-in methods only appear when their keys are set. */}
           {hasAnyProvider && (
             <div className="mt-8 space-y-3">
               {hasGoogle && (
                 <form action={signInWithGoogle}>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    variant="default"
-                  >
+                  <Button type="submit" className="w-full" size="lg" variant="outline">
                     <GoogleLogoIcon size={18} className="mr-2" />
                     Continue with Google
                   </Button>
@@ -215,36 +178,17 @@ async function LoginContent({ searchParams }: { searchParams: LoginSearchParams 
               )}
               {hasGitHub && (
                 <form action={signInWithGitHub}>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    variant="outline"
-                  >
+                  <Button type="submit" className="w-full" size="lg" variant="outline">
                     <GithubLogoIcon size={18} className="mr-2" />
                     Continue with GitHub
                   </Button>
                 </form>
               )}
-
-              {hasOAuth && hasResend && (
-                <div className="flex items-center gap-3 py-1">
-                  <Separator className="flex-1" />
-                  <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                    or
-                  </span>
-                  <Separator className="flex-1" />
-                </div>
-              )}
-
               {hasResend && (
                 <form action={sendMagicLink} className="space-y-3">
                   <div className="space-y-2">
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium"
-                    >
-                      Work email
+                    <label htmlFor="email" className="block text-sm font-medium">
+                      Email
                     </label>
                     <Input
                       id="email"
@@ -252,83 +196,30 @@ async function LoginContent({ searchParams }: { searchParams: LoginSearchParams 
                       type="email"
                       required
                       autoComplete="email"
-                      placeholder="you@company.com"
+                      placeholder="you@example.com"
                     />
                   </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    size="lg"
-                    variant={hasOAuth ? "outline" : "default"}
-                  >
-                    Send magic link <ArrowRightIcon className="ml-2 h-4 w-4" />
+                  <Button type="submit" className="w-full" size="lg" variant="outline">
+                    Email me a sign-in link <ArrowRightIcon className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
               )}
             </div>
           )}
 
-          {/* Footer */}
-          <p className="mt-10 text-xs text-center text-muted-foreground">
-            By continuing, you agree to our{" "}
-            <a href="/legal/terms" className="underline underline-offset-2">
+          <p className="mt-10 text-center text-xs text-muted-foreground">
+            By continuing, you agree to the{" "}
+            <a href="/terms" className="underline underline-offset-2">
               Terms
             </a>{" "}
             and{" "}
-            <a href="/legal/privacy" className="underline underline-offset-2">
+            <a href="/privacy" className="underline underline-offset-2">
               Privacy Policy
             </a>
             .
           </p>
         </div>
-      </div>
-
-      {/* Right panel — Testimonial / Brand */}
-      <div className="hidden lg:flex flex-1 items-center justify-center p-10 bg-lime-50 dark:bg-black/40 border-l-2 relative overflow-hidden">
-        <FlickeringGrid
-          className="absolute inset-0 z-0 mask-[radial-gradient(650px_circle_at_center,transparent,white)] pointer-events-none"
-          squareSize={2}
-          gridGap={6}
-          color="#83BE3C"
-          maxOpacity={0.6}
-          flickerChance={0.1}
-        />
-        <div className="w-full max-w-md">
-          {/* Stars */}
-          <div className="flex items-center gap-1 mb-6">
-            {[...Array(5)].map((_, i) => (
-              <StarIcon
-                key={i}
-                size={26}
-                weight="fill"
-                className="text-yellow-400 hover:scale-130 transition-all duration-300"
-              />
-            ))}
-          </div>
-
-          {/* Quote */}
-          <blockquote className="text-xl md:text-2xl font-medium leading-snug tracking-tight">
-            &ldquo;OpenInstaDM works so well that we were able to automate our
-            Comment-to-DM workflow in just a few hours! Bye bye expensive
-            manychat!&rdquo;
-          </blockquote>
-
-          {/* Author */}
-          <div className="mt-8 flex items-center gap-3">
-            <div className="size-10 rounded-full overflow-hidden bg-linear-to-tr from-yellow-400 to-rose-500"></div>
-            <div>
-              <p className="text-sm">Anish Biswas</p>
-              <p className="text-xs font-light">Founder @AuraDevs</p>
-            </div>
-          </div>
-
-          {/* Partner logos */}
-          <div className="mt-14 px-2 italic text-xl font-bold tracking-tighter shimmer">
-            Loved by 150+ creators and brands worldwide!
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

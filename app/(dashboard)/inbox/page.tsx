@@ -22,12 +22,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
+import { sfx } from "@/lib/handdrawn";
+import { CritterArt } from "@/components/handdrawn/critter-art";
+import { HdPageHead } from "@/components/handdrawn/hd-bits";
 import {
   ArrowDown,
   ArrowLeft,
   ChatCircle,
-  InstagramLogo,
   MagnifyingGlass,
   PaperPlaneTilt,
 } from "@phosphor-icons/react";
@@ -424,7 +426,8 @@ export default function InboxPage() {
       }
     },
     onSuccess: () => {
-      gooeyToast.success("Message sent");
+      sfx("sent");
+      gooeyToast.success("Sent");
     },
     onSettled: () => {
       // Refresh both the list (last message + ordering) and the thread.
@@ -473,14 +476,12 @@ export default function InboxPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Inbox
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Direct messages from commenters — read and reply in real time.
-          </p>
-        </div>
+        <HdPageHead
+          area="inbox"
+          title="Inbox"
+          line="Your DMs. Read and reply here."
+          className="min-w-0"
+        />
         {accounts.length > 1 && (
           <AccountSelect
             accounts={accounts}
@@ -491,17 +492,15 @@ export default function InboxPage() {
         )}
       </div>
 
-      <Card className="h-[calc(100svh-16rem)] max-h-220 min-h-120 gap-0 overflow-hidden py-0 sm:h-[calc(100dvh-13rem)]">
+      <Card className="h-[calc(100svh-19rem)] max-h-220 min-h-110 gap-0 overflow-hidden py-0 sm:h-[calc(100dvh-14rem)]">
         {accountsQuery.isSuccess && accounts.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <InstagramLogo className="size-6" />
-            </span>
-            <p className="text-sm font-medium text-foreground">
-              No Instagram account connected
+            <CritterArt area="inbox" mood="sleep" pokeable className="w-28" />
+            <p className="font-display text-2xl leading-tight text-foreground">
+              No Instagram account yet
             </p>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Connect an account to read and reply to your direct messages.
+              Connect your account and the parrot will bring your DMs here.
             </p>
             {canManageAccounts && <Link
               href="/api/instagram/connect"
@@ -552,15 +551,12 @@ export default function InboxPage() {
                   </p>
                 ) : conversations.length === 0 ? (
                   <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
-                    <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                      <ChatCircle className="size-5" />
-                    </span>
-                    <p className="text-sm font-medium text-foreground">
-                      No conversations yet
+                    <CritterArt area="inbox" mood="sleep" pokeable className="w-24" />
+                    <p className="font-display text-xl leading-tight text-foreground">
+                      No DMs yet
                     </p>
                     <p className="max-w-55 text-xs text-muted-foreground">
-                      When someone replies to your automation DM, it will show
-                      up here.
+                      The parrot is napping. New DMs show up here.
                     </p>
                   </div>
                 ) : filteredConversations.length === 0 ? (
@@ -635,15 +631,12 @@ export default function InboxPage() {
             >
               {!openConversation ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                    <ChatCircle weight="duotone" className="size-6" />
-                  </span>
-                  <p className="text-sm font-medium text-foreground">
-                    Select a conversation
+                  <CritterArt area="inbox" pokeable className="w-24" />
+                  <p className="font-display text-2xl leading-tight text-foreground">
+                    Pick a chat
                   </p>
                   <p className="max-w-xs text-xs text-muted-foreground">
-                    Pick someone from the list to read the full thread and
-                    reply. New DMs arrive automatically.
+                    Tap someone on the left to read and reply.
                   </p>
                 </div>
               ) : (
@@ -744,7 +737,7 @@ export default function InboxPage() {
                                   )}
                                   <div
                                     className={cn(
-                                      "max-w-[85%] min-w-0 px-3.5 py-2 text-sm leading-relaxed wrap-break-word shadow-xs sm:max-w-[75%]",
+                                      "max-w-[85%] min-w-0 px-3.5 py-2 text-sm leading-relaxed wrap-break-word sm:max-w-[75%]",
                                       m.fromMe
                                         ? "rounded-2xl rounded-br-xs bg-primary text-primary-foreground"
                                         : "rounded-2xl rounded-bl-xs border border-border/60 bg-muted/80 text-foreground",
@@ -780,7 +773,7 @@ export default function InboxPage() {
                           size="sm"
                           variant="secondary"
                           onClick={scrollToBottom}
-                          className="pointer-events-auto rounded-full shadow-md"
+                          className="pointer-events-auto rounded-full"
                         >
                           <ArrowDown weight="bold" className="size-3.5" />
                           Latest
@@ -791,7 +784,7 @@ export default function InboxPage() {
 
                   <div className="shrink-0 border-t border-border bg-background px-3 pt-2.5 pb-3 sm:px-4 sm:pb-4">
                     {isWindowClosed && (
-                      <div className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                      <div className="hr2 mb-2 border-2 border-warning bg-paper2 px-3 py-2 text-xs leading-relaxed text-foreground">
                         {windowWarning}
                       </div>
                     )}

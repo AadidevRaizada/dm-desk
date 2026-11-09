@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { gooeyToast } from "goey-toast";
+import { gooeyToast } from "@/lib/hd-toast";
 import { ArrowsClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 

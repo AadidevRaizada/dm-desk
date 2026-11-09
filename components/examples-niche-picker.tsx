@@ -56,7 +56,7 @@ export default function ExamplesNichePicker() {
             className={cn(
               "rounded-full border px-4 py-2 text-sm font-medium transition-all",
               t.slug === active.slug
-                ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
             )}
           >
@@ -99,7 +99,7 @@ export default function ExamplesNichePicker() {
                   >
                     {copied === `${active.slug}-kw` ? (
                       <>
-                        <CheckIcon className="size-3.5 text-emerald-500" /> Copied
+                        <CheckIcon className="size-3.5 text-ok" /> Copied
                       </>
                     ) : (
                       <>
@@ -133,7 +133,7 @@ export default function ExamplesNichePicker() {
                   >
                     {copied === `${active.slug}-dm` ? (
                       <>
-                        <CheckIcon className="size-3.5 text-emerald-500" /> Copied
+                        <CheckIcon className="size-3.5 text-ok" /> Copied
                       </>
                     ) : (
                       <>

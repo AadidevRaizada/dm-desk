@@ -29,12 +29,12 @@ export default function StatCard({
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm text-muted-foreground">{label}</p>
           {icon && (
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-wash text-ink">
               {icon}
             </span>
           )}
         </div>
-        <p className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
+        <p className="font-display text-3xl leading-none tabular-nums text-foreground">
           {value}
         </p>
         {trend && (
