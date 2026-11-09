@@ -12,6 +12,7 @@
  */
 
 import { useState } from "react";
+import { copyTextOrThrow } from "@/lib/copy-text";
 import { useRouter } from "next/navigation";
 import { gooeyToast } from "@/lib/hd-toast";
 import { SignOut, Trash } from "@phosphor-icons/react";
@@ -95,7 +96,7 @@ export default function SettingsTeam({
           const inviteUrl: string | null = payload.inviteUrl ?? null;
           if (inviteUrl) {
             try {
-              await navigator.clipboard.writeText(inviteUrl);
+              await copyTextOrThrow(inviteUrl);
               gooeyToast.success(`Invite link ready for ${email}`, {
                 description: payload.emailSent
                   ? "Email sent — link also copied to clipboard."
@@ -245,7 +246,7 @@ export default function SettingsTeam({
         const inviteUrl: string | null = payload.inviteUrl ?? null;
         if (inviteUrl && !payload.emailSent) {
           try {
-            await navigator.clipboard.writeText(inviteUrl);
+            await copyTextOrThrow(inviteUrl);
             gooeyToast.success(`Invite renewed for ${email}`, {
               description: "Link copied — share it via Slack, WhatsApp, etc.",
             });
@@ -272,7 +273,7 @@ export default function SettingsTeam({
 
   async function copyInviteLink(url: string) {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyTextOrThrow(url);
       gooeyToast.success("Invite link copied", {
         description: "Share it with the invitee.",
       });

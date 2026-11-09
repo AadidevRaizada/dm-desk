@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { copyTextOrThrow } from "@/lib/copy-text";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -161,7 +162,7 @@ export default function CampaignDetail({ campaign }: CampaignDetailProps) {
 
   async function copyText(text: string, key: string, label: string) {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyTextOrThrow(text);
       setCopied(key);
       gooeyToast.success(`${label} copied`);
       window.setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500);

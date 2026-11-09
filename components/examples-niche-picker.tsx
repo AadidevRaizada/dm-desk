@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { copyTextOrThrow } from "@/lib/copy-text";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ function useCopy() {
 
   async function copy(key: string, text: string) {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyTextOrThrow(text);
     } catch {
       const el = document.createElement("textarea");
       el.value = text;

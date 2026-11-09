@@ -4,6 +4,14 @@ import { useState } from "react";
 import { analysisToPrompt } from "@/lib/coach/export";
 import { ArrowClockwise, Check, Copy, SpinnerGap } from "@phosphor-icons/react";
 import { gooeyToast } from "@/lib/hd-toast";
+import { copyText } from "@/lib/copy-text";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -50,17 +58,37 @@ export function CopyButton({
   iconOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [manual, setManual] = useState(false);
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
       setCopied(true);
       gooeyToast.success(toast);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      gooeyToast.error("Couldn't copy. Long-press the text instead.");
+    } else {
+      // In-app browsers can block copying entirely: show the text selected so a
+      // long-press → Copy works.
+      setManual(true);
     }
   }
   return (
+    <>
+    <Dialog open={manual} onOpenChange={setManual}>
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Copy it from here</DialogTitle>
+          <DialogDescription>
+            This browser blocked copying. The text is selected: long-press it and tap Copy.
+          </DialogDescription>
+        </DialogHeader>
+        <textarea
+          readOnly
+          value={text}
+          autoFocus
+          onFocus={(e) => e.currentTarget.select()}
+          className="h-64 w-full resize-none rounded-md border-2 border-ink bg-paper2 p-2 text-sm"
+        />
+      </DialogContent>
+    </Dialog>
     <Button
       type="button"
       variant="outline"
@@ -72,6 +100,7 @@ export function CopyButton({
       {copied ? <Check className="text-success" /> : <Copy />}
       {!iconOnly && (copied ? "Copied" : label)}
     </Button>
+    </>
   );
 }
 

@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { copyTextOrThrow } from "@/lib/copy-text";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -279,7 +280,7 @@ export default function CampaignsList({
     setMenuOpenId(null);
     if (!auto.postUrl) return;
     try {
-      await navigator.clipboard.writeText(auto.postUrl);
+      await copyTextOrThrow(auto.postUrl);
       setCopiedId(auto.id);
       gooeyToast.success("Reel URL copied");
       window.setTimeout(

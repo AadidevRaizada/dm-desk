@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { copyTextOrThrow } from "@/lib/copy-text";
 import { Copy, Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +19,7 @@ export function CodeBlock({
   const [copied, setCopied] = useState(false);
 
   async function onCopy() {
-    await navigator.clipboard.writeText(code);
+    await copyTextOrThrow(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }
