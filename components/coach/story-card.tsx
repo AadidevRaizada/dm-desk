@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { analysisToPrompt } from "@/lib/coach/export";
 import { ArrowClockwise, Check, Copy, SpinnerGap } from "@phosphor-icons/react";
 import { gooeyToast } from "@/lib/hd-toast";
 import { Button } from "@/components/ui/button";
@@ -184,7 +185,7 @@ export function SavedMeta({
   const date = new Date(analysis.createdAt);
   return (
     <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-      <span className="min-w-0 truncate">
+      <span className="min-w-0 flex-1 truncate">
         Saved{" "}
         {date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
         {persona && (
@@ -194,6 +195,14 @@ export function SavedMeta({
           </>
         )}
       </span>
+      {(analysis.result as { status?: string } | null)?.status !== "pending" &&
+        (analysis.result as { status?: string } | null)?.status !== "error" && (
+          <CopyButton
+            text={analysisToPrompt(analysis, persona)}
+            label="Copy as prompt"
+            toast="Copied. Paste it into Claude to make the reel."
+          />
+        )}
       {onRedo && (
         <Button
           type="button"
