@@ -264,6 +264,7 @@ interface UploadInput {
   id: string;
   caption: string;
   shareToFeed: boolean;
+  trialStrategy: string | null;
   coverPath: string | null;
   absVideo: string;
   size: number;
@@ -275,6 +276,9 @@ async function createAndUpload(post: UploadInput, opts: Resolved): Promise<strin
   const base = {
     caption: post.caption,
     shareToFeed: post.shareToFeed,
+    trialStrategy: (post.trialStrategy === "MANUAL" || post.trialStrategy === "SS_PERFORMANCE"
+      ? post.trialStrategy
+      : null) as "MANUAL" | "SS_PERFORMANCE" | null,
     thumbOffsetMs: thumbOffsetFromCover(post.coverPath),
   };
 

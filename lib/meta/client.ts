@@ -851,6 +851,8 @@ export interface ReelContainerOptions {
   coverUrl?: string | null;
   /** Public HTTPS URL Meta fetches the video from. Omit for a resumable upload. */
   videoUrl?: string | null;
+  /** Publish as a trial reel (non-followers first). */
+  trialStrategy?: "MANUAL" | "SS_PERFORMANCE" | null;
 }
 
 export type ContainerStatusCode =
@@ -886,13 +888,16 @@ export async function createReelContainer(
   igUserId: string,
   options: ReelContainerOptions
 ): Promise<{ id: string; uri?: string }> {
-  const body: Record<string, string | boolean | number> = {
+  const body: Record<string, string | boolean | number | Record<string, string>> = {
     media_type: "REELS",
     caption: options.caption,
     share_to_feed: options.shareToFeed,
   };
   if (options.videoUrl) body.video_url = options.videoUrl;
   else body.upload_type = "resumable";
+  if (options.trialStrategy) {
+    body.trial_params = { graduation_strategy: options.trialStrategy };
+  }
   if (options.coverUrl) body.cover_url = options.coverUrl;
   else if (options.thumbOffsetMs && options.thumbOffsetMs > 0)
     body.thumb_offset = Math.round(options.thumbOffsetMs);

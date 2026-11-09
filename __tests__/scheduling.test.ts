@@ -194,6 +194,27 @@ describe("publishDuePosts — happy path (resumable)", () => {
   });
 });
 
+describe("publishDuePosts — trial reels", () => {
+  it("sends trial_params with the graduation strategy", async () => {
+    mockPrisma.scheduledPost.findUnique.mockResolvedValue(post({ trialStrategy: "SS_PERFORMANCE" }));
+    mockFetch((url, init) => {
+      if (url.includes("/content_publishing_limit"))
+        return { body: { data: [{ quota_usage: 0, config: { quota_total: 100 } }] } };
+      if (url.endsWith("/1789/media") && init?.method === "POST") return { body: { id: "C1" } };
+      if (url.startsWith("https://rupload.facebook.com/")) return { body: { success: true } };
+      if (url.includes("/C1?")) return { body: { id: "C1", status_code: "FINISHED" } };
+      if (url.endsWith("/1789/media_publish")) return { body: { id: "M1" } };
+      if (url.includes("/M1?")) return { body: { id: "M1", permalink: "https://www.instagram.com/reel/t/" } };
+      return { status: 404, body: { error: { message: "unexpected " + url, code: 100 } } };
+    });
+    await publishDuePosts(opts);
+    const create = calls.find((c) => c.url.endsWith("/1789/media"))!;
+    expect(JSON.parse(create.init!.body as string).trial_params).toEqual({
+      graduation_strategy: "SS_PERFORMANCE",
+    });
+  });
+});
+
 describe("publishDuePosts — failures", () => {
   it("reschedules +10 min on a transient error and counts the attempt", async () => {
     mockFetch(() => new TypeError("fetch failed"));

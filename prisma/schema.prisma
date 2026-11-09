@@ -176,6 +176,10 @@ model ScheduledPost {
   videoPath          String
   coverPath          String?
   shareToFeed        Boolean   @default(true)
+  /// Trial reel (shown to non-followers first): null = normal reel,
+  /// "SS_PERFORMANCE" = Instagram shares it to followers if it does well,
+  /// "MANUAL" = the creator decides in the Instagram app.
+  trialStrategy      String?
   scheduledAt        DateTime
   status             String    @default("SCHEDULED")
   containerId        String?

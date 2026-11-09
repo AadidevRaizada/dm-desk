@@ -202,6 +202,11 @@ function Row({ post, children }: { post: ScheduledPostView; children: React.Reac
         <p className="mb-1.5 text-xs text-muted-foreground">
           @{post.username}
           {post.shareToFeed ? "" : " · Reels only"}
+          {post.trialStrategy
+            ? post.trialStrategy === "MANUAL"
+              ? " · Trial (you share it)"
+              : " · Trial (auto-share if it does well)"
+            : ""}
         </p>
         {children}
       </div>

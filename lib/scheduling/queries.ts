@@ -8,6 +8,7 @@ export interface ScheduledPostView {
   username: string;
   caption: string;
   shareToFeed: boolean;
+  trialStrategy: string | null;
   scheduledAt: string;
   status: string;
   permalink: string | null;
@@ -76,6 +77,7 @@ export async function getScheduleData(workspaceId: string): Promise<ScheduleData
     username: r.instagramAccount.username,
     caption: r.caption,
     shareToFeed: r.shareToFeed,
+    trialStrategy: r.trialStrategy,
     scheduledAt: r.scheduledAt.toISOString(),
     status: r.status,
     permalink: r.permalink,

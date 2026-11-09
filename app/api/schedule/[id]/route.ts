@@ -17,6 +17,7 @@ const patchSchema = z.union([
     scheduledAt: z.iso.datetime({ offset: true }).optional(),
     caption: z.string().max(10_000).optional(),
     shareToFeed: z.boolean().optional(),
+    trialStrategy: z.enum(["MANUAL", "SS_PERFORMANCE"]).nullable().optional(),
   }),
 ]);
 
@@ -64,7 +65,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ ok: updated.count === 1 });
   }
 
-  const { scheduledAt, caption, shareToFeed } = parsed.data;
+  const { scheduledAt, caption, shareToFeed, trialStrategy } = parsed.data;
   if (caption !== undefined) {
     const problem = captionProblem(caption);
     if (problem) return NextResponse.json({ error: problem }, { status: 400 });
@@ -87,6 +88,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         : {}),
       ...(caption !== undefined ? { caption } : {}),
       ...(shareToFeed !== undefined ? { shareToFeed } : {}),
+      ...(trialStrategy !== undefined ? { trialStrategy } : {}),
     },
   });
   if (updated.count !== 1) {

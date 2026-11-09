@@ -75,6 +75,8 @@ export default function ScheduleForm({
   const [caption, setCaption] = useState("");
   const [when, setWhen] = useState(""); // "" = use the suggested slot
   const [shareToFeed, setShareToFeed] = useState(true);
+  const [trial, setTrial] = useState(false);
+  const [trialStrategy, setTrialStrategy] = useState<"SS_PERFORMANCE" | "MANUAL">("SS_PERFORMANCE");
   const [coverSec, setCoverSec] = useState(0);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -178,6 +180,7 @@ export default function ScheduleForm({
           caption,
           scheduledAt: whenDate.toISOString(),
           shareToFeed,
+          trialStrategy: trial ? trialStrategy : null,
           thumbOffsetMs: Math.round(coverSec * 1000),
         }),
       });
@@ -383,6 +386,41 @@ export default function ScheduleForm({
         </span>
         <Switch checked={shareToFeed} onCheckedChange={(v) => setShareToFeed(v)} />
       </label>
+
+      <div>
+        <label className="flex min-h-11 items-center justify-between gap-3">
+          <span>
+            <span className="text-sm font-semibold">Trial reel</span>
+            <span className="block text-xs text-muted-foreground">
+              Shown to non-followers first, so a miss doesn&apos;t hit your followers.
+            </span>
+          </span>
+          <Switch checked={trial} onCheckedChange={(v) => setTrial(v)} />
+        </label>
+        {trial ? (
+          <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="When followers see it">
+            {([
+              ["SS_PERFORMANCE", "Share if it does well", "Instagram decides"],
+              ["MANUAL", "I'll decide", "In the Instagram app"],
+            ] as const).map(([value, title, hint]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={trialStrategy === value}
+                onClick={() => setTrialStrategy(value)}
+                className={
+                  "rounded-md border-2 px-3 py-2 text-left " +
+                  (trialStrategy === value ? "border-foreground bg-muted" : "border-border")
+                }
+              >
+                <span className="block text-sm font-semibold">{title}</span>
+                <span className="block text-xs text-muted-foreground">{hint}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {accounts.length > 1 ? (
         <div>

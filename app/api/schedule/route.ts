@@ -29,6 +29,7 @@ const createSchema = z.object({
   caption: z.string().max(10_000).default(""),
   scheduledAt: z.iso.datetime({ offset: true }),
   shareToFeed: z.boolean().default(true),
+  trialStrategy: z.enum(["MANUAL", "SS_PERFORMANCE"]).nullable().default(null),
   thumbOffsetMs: z.number().int().min(0).max(15 * 60_000).optional().nullable(),
 });
 
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
       // The offset rides in the cover's file name, so keep it even if the frame grab failed.
       coverPath: hasCover || offset > 0 ? coverRel : null,
       shareToFeed: input.shareToFeed,
+      trialStrategy: input.trialStrategy,
       scheduledAt,
       status: "SCHEDULED",
     },
