@@ -779,11 +779,19 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
               />
             </div>
             {dmTriggerEnabled && (
-              <p className="text-xs text-muted-foreground">
-                {matchMode === "any"
-                  ? "Every DM to this account gets the reply below — use with care."
-                  : "A DM containing any of these words gets the same reply, no comment needed."}
-              </p>
+              matchMode === "any" ? (
+                <p className="rounded-md border-2 border-warning bg-warning/10 px-2.5 py-2 text-xs text-foreground">
+                  <strong>Careful:</strong> anyone who DMs this account about anything
+                  (even &quot;hi&quot;) gets this reply. Each person gets it at most once
+                  every 30 days. To only answer people asking for it, pick
+                  &quot;a specific word&quot; and add words like LINK or GUIDE.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  A DM containing any of these words gets the same reply, no comment
+                  needed. Each person gets it at most once a day.
+                </p>
+              )
             )}
             <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
               <span className="text-sm text-foreground">

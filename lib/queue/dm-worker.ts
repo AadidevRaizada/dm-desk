@@ -64,6 +64,10 @@ function formatError(error: unknown): string {
 // the attempt and — worse — overwrites the real error with a misleading one
 // ("invalid for a private reply", because the first attempt already used up the
 // comment's single allowed private reply).
+// DM-trigger cooldowns (see processMessage).
+const DM_TRIGGER_ANY_WORD_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
+const DM_TRIGGER_KEYWORD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 const NON_TEMPLATE_REJECTIONS = [
   /outside of allowed window/i,
   /invalid for a private reply/i,
@@ -1148,6 +1152,28 @@ async function processMessage(job: Job<ProcessMessageJob>): Promise<void> {
     console.log(`[DM Worker] processMessage: campaign "${automation.name}" (${automation.id}) MATCHES with keyword "${matchResult.matchedKeyword ?? 'any'}"`);
     matchedAny = true;
 
+    // Per-person cooldown for DM triggers. Each DM has its own message id, so
+    // without this a person chatting ("Hi", "Did") got the same automated
+    // reply to every message. With "any word" a person is answered once per
+    // 30 days; with keywords, once per 24 hours.
+    const cooldownMs = automation.matchAnyWord
+      ? DM_TRIGGER_ANY_WORD_COOLDOWN_MS
+      : DM_TRIGGER_KEYWORD_COOLDOWN_MS;
+    const recentReply = await prisma.dmLog.findFirst({
+      where: {
+        automationId: automation.id,
+        commenterId: senderId,
+        commentId: { startsWith: "dm:" },
+        status: { in: ["SENT", "PENDING"] },
+        createdAt: { gte: new Date(Date.now() - cooldownMs) },
+      },
+      select: { id: true },
+    });
+    if (recentReply) {
+      console.log(`[DM Worker] processMessage: campaign "${automation.name}" already replied to ${senderId} recently, skipping (cooldown)`);
+      continue;
+    }
+
     const existingLog = await prisma.dmLog.findUnique({
       where: {
         automationId_commentId: {
@@ -1339,7 +1365,7 @@ async function processMessage(job: Job<ProcessMessageJob>): Promise<void> {
         const promptText = renderMessageWithoutLink({
           message:
             automation.followPromptMessage ||
-            "Almost there! Follow me and tap the button below to grab your link 💛",
+            DEFAULT_FOLLOW_PROMPT,
           commenterName,
         });
         console.log(`[DM Worker] processMessage: sending follow prompt to ${senderId}`);
