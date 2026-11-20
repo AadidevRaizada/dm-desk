@@ -430,7 +430,7 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
       pendingNextReel: triggerScope === "next",
       matchAnyWord: matchMode === "any",
       keywords: matchMode === "any" ? [] : keywords,
-      dmTriggerEnabled,
+      dmTriggerEnabled: false, // direct-DM replies are off (see processMessage)
       dmMessage,
       openingDmEnabled,
       openingDmMessage: openingDmEnabled ? openingDmMessage : null,
@@ -768,31 +768,6 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
             >
               any word
             </Radio>
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5">
-              <span className="text-sm text-foreground">
-                also reply when someone DMs{" "}
-                {matchMode === "any" ? "anything" : "these words"}
-              </span>
-              <Switch
-                checked={dmTriggerEnabled}
-                onCheckedChange={setDmTriggerEnabled}
-              />
-            </div>
-            {dmTriggerEnabled && (
-              matchMode === "any" ? (
-                <p className="rounded-md border-2 border-warning bg-warning/10 px-2.5 py-2 text-xs text-foreground">
-                  <strong>Careful:</strong> anyone who DMs this account about anything
-                  (even &quot;hi&quot;) gets this reply. Each person gets it at most once
-                  every 30 days. To only answer people asking for it, pick
-                  &quot;a specific word&quot; and add words like LINK or GUIDE.
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  A DM containing any of these words gets the same reply, no comment
-                  needed. Each person gets it at most once a day.
-                </p>
-              )
-            )}
             <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
               <span className="text-sm text-foreground">
                 reply to their comments under the post

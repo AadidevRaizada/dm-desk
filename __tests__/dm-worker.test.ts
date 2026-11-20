@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const {
   mockPrisma,
@@ -1084,7 +1084,24 @@ describe("DM Worker — DM keyword trigger", () => {
   }
 
   beforeEach(() => {
+    // Direct-DM replies are off by default (DM Desk policy); these tests cover
+    // the opt-in path.
+    process.env.DIRECT_DM_REPLIES = "on";
     mockPrisma.automation.findMany.mockResolvedValue([dmTriggerAutomation]);
+  });
+
+  afterEach(() => {
+    delete process.env.DIRECT_DM_REPLIES;
+  });
+
+  it("does not reply to a direct DM at all when direct-DM replies are off (default)", async () => {
+    delete process.env.DIRECT_DM_REPLIES;
+    const processor = getProcessor();
+    await processor(createMockMessageJob());
+    expect(mockPrisma.automation.findMany).not.toHaveBeenCalled();
+    expect(mockSendDirectMessage).not.toHaveBeenCalled();
+    expect(mockSendDirectMessageWithButton).not.toHaveBeenCalled();
+    expect(mockSendDirectMessageWithLinkButton).not.toHaveBeenCalled();
   });
 
   it("should reply to a DM whose text matches the campaign keywords", async () => {
@@ -1268,6 +1285,14 @@ describe("DM Worker — Inbox automations (AI-first → fallback)", () => {
       attemptsMade: 0,
     };
   }
+
+  beforeEach(() => {
+    process.env.DIRECT_DM_REPLIES = "on";
+  });
+
+  afterEach(() => {
+    delete process.env.DIRECT_DM_REPLIES;
+  });
 
   beforeEach(() => {
     // No campaign matches — force the inbox config.

@@ -1113,6 +1113,14 @@ async function processMessage(job: Job<ProcessMessageJob>): Promise<void> {
 
   console.log(`[DM Worker] processMessage START: account=${instagramAccountId}, messageId=${messageId}, senderId=${senderId}, text="${messageText.slice(0, 100)}"`);
 
+  // DM Desk policy: never auto-reply to a DM someone typed themselves, keyword
+  // or not. Replies only start from comments on a post/reel (and the button
+  // taps that follow, handled as postbacks). Set DIRECT_DM_REPLIES=on to undo.
+  if (process.env.DIRECT_DM_REPLIES !== "on") {
+    console.log(`[DM Worker] processMessage: direct-DM replies are off, not replying to ${senderId}`);
+    return;
+  }
+
   const automations = await prisma.automation.findMany({
     where: {
       dmTriggerEnabled: true,
